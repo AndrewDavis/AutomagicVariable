@@ -1,18 +1,24 @@
 window.onload = function() {
     globalThis.HTML = document.getElementsByTagName('*');
+    globalThis.print = function(printMe) {
+        HTML.outputPre.innerHTML += printMe;
+    }
+    globalThis.printLine = function(printMe) {
+        HTML.outputPre.innerHTML += printMe + '\n';
+    }
 
     let avm = AutomagicVariableMap.create();
-    HTML.outputPre.innerHTML += (typeof(avm._avm) == 'undefined' ? 'not AVM' : 'AVM') + '\n';
+    globalThis.printLine((typeof(avm._avm) == 'undefined' ? 'not AVM' : 'AVM'));
 
     avm.a = 7;
     avm.b = AutomagicVariable.create(function(self) {
         self.value = avm.a + 2;
     });
-    HTML.outputPre.innerHTML += avm.a + ', ' + avm.b + '\n';
+    globalThis.printLine(avm.a + ', ' + avm.b);
     avm.a = 8;
-    HTML.outputPre.innerHTML += avm.a + ', ' + avm.b + '\n';
+    globalThis.printLine(avm.a + ', ' + avm.b);
     avm.c = avm._a;
-    HTML.outputPre.innerHTML += avm.c + '\n';
+    globalThis.printLine(avm.c);
     avm.c = 10;
-    HTML.outputPre.innerHTML += avm.a + ', ' + avm.b + ', ' + avm.c + '\n';
+    globalThis.printLine(avm.a + ', ' + avm.b + ', ' + avm.c);
 };
