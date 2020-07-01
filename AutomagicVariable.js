@@ -12,13 +12,7 @@ let AVMGetFunction = function(targetAVM, propertyName, receiverProxy) {
         //Property exists.
         if (typeof(AVMTargetProperty._av) !== 'undefined') {
             //Property is an AV.
-            AVMTargetProperty = AutomagicVariable._getValue(AVMTargetProperty);
-            //See if it's a function.
-            if (typeof(AVMTargetProperty) === 'function') {
-                //This avoids issues with several various JS objects like Maps.
-                AVMTargetProperty.bind(targetAVM);
-            }
-            return AVMTargetProperty;
+            return AutomagicVariable._getValue(AVMTargetProperty);
         } else {
             //Property exists but isn't an AV.
             return AVMTargetProperty;
