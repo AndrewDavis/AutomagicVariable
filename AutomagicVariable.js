@@ -62,6 +62,8 @@ let AVValueRecomputeFunction = function(self, newValue) {
     self.value = newValue;
 };
 
+let AVNewAV;
+
 class AutomagicVariable {
     /**
      * Do not use this constructor externally! Use auto(), value(), or autoValue() instead.
@@ -70,45 +72,43 @@ class AutomagicVariable {
     constructor(isDirty) {
         //This begins with _ to differentiate it from any non-AV objects that might have an `av` property.
         this._av = this;
-        this.private = {
-            value: null,
-            dependents: new Set(),
-            isDirty: isDirty
-        };
+        this.valueProperty = null;
+        this.dependents = new Set();
+        this.isDirty = isDirty;
     }
 
     static auto(onRecompute = AVValueRecomputeFunction) {
-        let newAV = new AutomagicVariable(true);
-        newAV.private.onRecompute = onRecompute;
-        newAV.recompute();
-        return newAV;
+        AVNewAV = new AutomagicVariable(true);
+        AVNewAV.onRecompute = onRecompute;
+        AVNewAV.recompute();
+        return AVNewAV;
     }
 
     static value(initialValue = undefined) {
-        let newAV = new AutomagicVariable(false);
-        newAV.private.onRecompute = AVValueRecomputeFunction;
-        newAV.value = initialValue;
-        return newAV;
+        AVNewAV = new AutomagicVariable(false);
+        AVNewAV.onRecompute = AVValueRecomputeFunction;
+        AVNewAV.value = initialValue;
+        return AVNewAV;
     }
 
     static autoValue(onRecompute) {
-        let newAV = new AutomagicVariable(false);
-        newAV.private.onRecompute = function(self, newValue) {
+        AVNewAV = new AutomagicVariable(false);
+        AVNewAV.onRecompute = function(self, newValue) {
             if (typeof(newValue) == 'undefined') {
                 return onRecompute(self, newValue);
             } else {
                 self.value = newValue;
             }
         };
-        newAV.recompute();
-        return newAV;
+        AVNewAV.recompute();
+        return AVNewAV;
     }
 
     mergeInternalsFrom(av) {
-        this.private.value = av.private.value;
-        av.private.dependents.forEach(this.private.dependents.add, this.private.dependents);
-        this.private.isDirty = av.private.isDirty;
-        this.private.onRecompute = av.private.onRecompute;
+        this.valueProperty = av.valueProperty;
+        av.dependents.forEach(this.dependents.add, this.dependents);
+        this.isDirty = av.isDirty;
+        this.onRecompute = av.onRecompute;
     }
 
     getUpdatedValue() {
@@ -117,7 +117,7 @@ class AutomagicVariable {
                 AutomagicVariable.RecomputingAVs = [];
                 throw 'Error: AutomagicVariable recursion detected!';
             } else {
-                this.private.dependents.add(AutomagicVariable.RecomputingAVs[0]);
+                this.dependents.add(AutomagicVariable.RecomputingAVs[0]);
             }
         }
         return this.value;
@@ -125,35 +125,23 @@ class AutomagicVariable {
 
     recompute(newValue = undefined) {
         AutomagicVariable.RecomputingAVs.push(this);
-        this.private.isDirty = false;
-        let wasTouched = this.private.onRecompute(this, newValue);
-        if (wasTouched !== false) {
+        this.isDirty = false;
+        if (this.onRecompute(this, newValue) !== false) {
             this.touched();
         }
         AutomagicVariable.RecomputingAVs.pop();
     }
 
     touch() {
-        this.private.isDirty = true;
+        this.isDirty = true;
         this.touched();
     }
 
     touched() {
-        for (let dependent of this.private.dependents) {
-            dependent.touch();
+        for (let dependent of this.dependents) {
+            dependent.isDirty = true;
+            dependent.touched();
         }
-    }
-
-    isDirty() {
-        return this.private.isDirty;
-    }
-
-    addDependent(addMe) {
-        this.private.dependents.add(addMe);
-    }
-
-    addDependency(addToMe) {
-        addToMe.addDependent(this);
     }
 
     //toString() {
@@ -168,14 +156,14 @@ class AutomagicVariable {
     //     \/ "private"  functions \/
 
     get value() {
-        if (this.private.isDirty) {
+        if (this.isDirty) {
             this.recompute();
         }
-        return this.private.value;
+        return this.valueProperty;
     }
 
     set value(newValue) {
-        this.private.value = newValue;
+        this.valueProperty = newValue;
     }
 }
 AutomagicVariable.RecomputingAVs = [];
