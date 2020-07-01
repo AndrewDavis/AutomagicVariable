@@ -201,4 +201,54 @@ window.onload = function() {
     avm.nestedAVM = 'str';
     printLine(alignInfo('Reassign nested AVM: ') + avm.nestedAVM);
     printLine();
+
+    //Performance testing.
+
+    let performanceIterations = 1e6;
+    let s;
+    let e;
+    let obj = {};
+    let perfAVM = AVMap.create('perfAVM');
+
+    s = performance.now();
+    for (let n = 0; n < performanceIterations; ++n) {
+        obj = {};
+    }
+    e = performance.now();
+    printLine(alignInfo('1e6 objects: ') + (e - s) + 'ms');
+    s = performance.now();
+    for (let n = 0; n < performanceIterations; ++n) {
+        perfAVM = AVMap.create('perfAVM');
+    }
+    e = performance.now();
+    printLine(alignInfo('1e6 AVMaps: ') + (e - s) + 'ms');
+    printLine();
+
+    s = performance.now();
+    for (let n = 0; n < performanceIterations; ++n) {
+        obj[n] = n;
+    }
+    e = performance.now();
+    printLine(alignInfo('Object of 1e6: ') + (e - s) + 'ms');
+    s = performance.now();
+    for (let n = 0; n < performanceIterations; ++n) {
+        perfAVM[n] = n;
+    }
+    e = performance.now();
+    printLine(alignInfo('AVMap of 1e6: ') + (e - s) + 'ms');
+    printLine();
+
+    s = performance.now();
+    for (let n = 0; n < performanceIterations; ++n) {
+        ++obj[n];
+    }
+    e = performance.now();
+    printLine(alignInfo('Update object of 1e6: ') + (e - s) + 'ms');
+    s = performance.now();
+    for (let n = 0; n < performanceIterations; ++n) {
+        ++perfAVM[n];
+    }
+    e = performance.now();
+    printLine(alignInfo('Update AVMap of 1e6: ') + (e - s) + 'ms');
+    printLine();
 };

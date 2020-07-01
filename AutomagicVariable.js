@@ -5,7 +5,7 @@
 let AVMTargetProperty;
 let AVMGetFunction = function(targetAVM, propertyName, receiverProxy) {
     AVMTargetProperty = targetAVM[propertyName];
-    if (AVMTargetProperty == targetAVM) {
+    if (AVMTargetProperty === targetAVM) {
         //Getting the AVM itself.
         return targetAVM;
     } else if (typeof(AVMTargetProperty) !== 'undefined') {
@@ -35,7 +35,7 @@ let AVMGetFunction = function(targetAVM, propertyName, receiverProxy) {
 let AVMSetFunction = function(targetAVM, propertyName, newValue, receiverProxy) {
     AVMTargetProperty = targetAVM[propertyName];
     //See if assigning an AV.
-    if (newValue != null && typeof(newValue._av) !== 'undefined') {
+    if (newValue !== null && typeof(newValue._av) !== 'undefined') {
         //Assigning an AV.
         if (typeof(AVMTargetProperty) !== 'undefined' && typeof(AVMTargetProperty._av) !== 'undefined') {
             //Assigning an AV to an existing AV: always merge internals.
@@ -115,7 +115,7 @@ class AutomagicVariable {
     static auto(onRecompute = AVValueRecomputeFunction) {
         let newAV = new AutomagicVariable(true);
         newAV.private.onRecompute = onRecompute;
-        newAV._recompute();
+        newAV.recompute();
         return newAV;
     }
 
@@ -135,7 +135,7 @@ class AutomagicVariable {
                 self.value = newValue;
             }
         };
-        newAV._recompute();
+        newAV.recompute();
         return newAV;
     }
 
@@ -144,6 +144,16 @@ class AutomagicVariable {
         av.private.dependents.forEach(this.private.dependents.add, this.private.dependents);
         this.private.isDirty = av.private.isDirty;
         this.private.onRecompute = av.private.onRecompute;
+    }
+
+    recompute(newValue = undefined) {
+        AutomagicVariable.RecomputingAVs.push(this);
+        this.private.isDirty = false;
+        let wasTouched = this.private.onRecompute(this, newValue);
+        if (wasTouched !== false) {
+            this.touched();
+        }
+        AutomagicVariable.RecomputingAVs.pop();
     }
 
     touch() {
@@ -193,22 +203,12 @@ class AutomagicVariable {
     }
 
     static _setValue(av, newValue) {
-        av._recompute(newValue);
-    }
-
-    _recompute(newValue = undefined) {
-        AutomagicVariable.RecomputingAVs.push(this);
-        this.private.isDirty = false;
-        let wasTouched = this.private.onRecompute(this, newValue);
-        if (wasTouched !== false) {
-            this.touched();
-        }
-        AutomagicVariable.RecomputingAVs.pop();
+        av.recompute(newValue);
     }
 
     get value() {
         if (this.private.isDirty) {
-            this._recompute();
+            this.recompute();
         }
         return this.private.value;
     }
