@@ -2,67 +2,61 @@
 
 //Code published to: https://github.com/AndrewDavis/AutomagicVariable
 
-let AVMGetFunction = function(targetAVM, propertyName, receiverProxy) {
-    if (targetAVM[propertyName] === targetAVM) {
-        //Getting the AVM itself.
-        return targetAVM;
-    } else if (typeof(targetAVM[propertyName]) !== 'undefined') {
-        return targetAVM[propertyName].getUpdatedValue();
-    } else {
-        return undefined;
-    }
-};
-
-let AVMSetFunction = function(targetAVM, propertyName, newValue, receiverProxy) {
-    if (typeof(targetAVM[propertyName]) === 'undefined') {
-        if (typeof(newValue._av) === 'undefined') {
-            //Create a new value AV.
-            targetAVM[propertyName] = AutomagicVariable.value(newValue);
-        } else {
-            //Assign an existing AV.
-            targetAVM[propertyName] = newValue;
-        }
-        //Also, keep track of its name.
-        //targetAVM[propertyName].name = targetAVM.valueOf() + '.' + propertyName;
-    } else {
-        targetAVM[propertyName].recompute(newValue);
-    }
-    return true;
-};
-
-let AVMDeletePropertyFunction = function(targetAVM, propertyName) {
-    targetAVM[propertyName].touched();
-    delete targetAVM[propertyName];
-    return true;
-};
-
-//let AVMValueOfFunction = function(name) {
-//    return name;
-//};
-
-//let AVMToStringFunction = function() {
-//    return '[AVMap (' + this.valueOf() + ')]';
-//};
-
 class AutomagicVariableMap {
     static create(/*name = '<>'*/) {
         let avm = {};
         avm._ = avm;
-        //avm.valueOf = AVMValueOfFunction.bind(avm, name);
-        //avm.toString = AVMToStringFunction.bind(avm);
+        //avm.valueOf = valueOfFunction.bind(avm, name);
+        //avm.toString = toStringFunction.bind(avm);
         return new Proxy(avm, {
-            get: AVMGetFunction,
-            set: AVMSetFunction,
-            deleteProperty: AVMDeletePropertyFunction
+            get: AutomagicVariableMap.getFunction,
+            set: AutomagicVariableMap.setFunction,
+            deleteProperty: AutomagicVariableMap.deletePropertyFunction
         });
     }
+
+    static getFunction(targetAVM, propertyName, receiverProxy) {
+        if (targetAVM[propertyName] === targetAVM) {
+            //Getting the AVM itself.
+            return targetAVM;
+        } else if (typeof(targetAVM[propertyName]) !== 'undefined') {
+            return targetAVM[propertyName].getUpdatedValue();
+        } else {
+            return undefined;
+        }
+    };
+
+    static setFunction(targetAVM, propertyName, newValue, receiverProxy) {
+        if (typeof(targetAVM[propertyName]) === 'undefined') {
+            if (typeof(newValue._av) === 'undefined') {
+                //Create a new value AV.
+                targetAVM[propertyName] = AutomagicVariable.value(newValue);
+            } else {
+                //Assign an existing AV.
+                targetAVM[propertyName] = newValue;
+            }
+            //Also, keep track of its name.
+            //targetAVM[propertyName].name = targetAVM.valueOf() + '.' + propertyName;
+        } else {
+            targetAVM[propertyName].recompute(newValue);
+        }
+        return true;
+    };
+
+    static deletePropertyFunction(targetAVM, propertyName) {
+        targetAVM[propertyName].touched();
+        delete targetAVM[propertyName];
+        return true;
+    };
+
+    //static valueOfFunction(name) {
+    //    return name;
+    //};
+
+    //static toStringFunction() {
+    //    return '[AVMap (' + this.valueOf() + ')]';
+    //};
 }
-
-let AVValueRecomputeFunction = function(self, newValue) {
-    self.value = newValue;
-};
-
-let AVNewAV;
 
 class AutomagicVariable {
     /**
@@ -77,31 +71,31 @@ class AutomagicVariable {
         this.isDirty = isDirty;
     }
 
-    static auto(onRecompute = AVValueRecomputeFunction) {
-        AVNewAV = new AutomagicVariable(true);
-        AVNewAV.onRecompute = onRecompute;
-        AVNewAV.recompute();
-        return AVNewAV;
+    static auto(onRecompute = AutomagicVariable.valueRecomputeFunction) {
+        AutomagicVariable.AVNewAV = new AutomagicVariable(true);
+        AutomagicVariable.AVNewAV.onRecompute = onRecompute;
+        AutomagicVariable.AVNewAV.recompute();
+        return AutomagicVariable.AVNewAV;
     }
 
     static value(initialValue = undefined) {
-        AVNewAV = new AutomagicVariable(false);
-        AVNewAV.onRecompute = AVValueRecomputeFunction;
-        AVNewAV.value = initialValue;
-        return AVNewAV;
+        AutomagicVariable.AVNewAV = new AutomagicVariable(false);
+        AutomagicVariable.AVNewAV.onRecompute = AutomagicVariable.valueRecomputeFunction;
+        AutomagicVariable.AVNewAV.value = initialValue;
+        return AutomagicVariable.AVNewAV;
     }
 
     static autoValue(onRecompute) {
-        AVNewAV = new AutomagicVariable(false);
-        AVNewAV.onRecompute = function(self, newValue) {
+        AutomagicVariable.AVNewAV = new AutomagicVariable(false);
+        AutomagicVariable.AVNewAV.onRecompute = function(self, newValue) {
             if (typeof(newValue) == 'undefined') {
                 return onRecompute(self, newValue);
             } else {
                 self.value = newValue;
             }
         };
-        AVNewAV.recompute();
-        return AVNewAV;
+        AutomagicVariable.AVNewAV.recompute();
+        return AutomagicVariable.AVNewAV;
     }
 
     mergeInternalsFrom(av) {
@@ -165,6 +159,10 @@ class AutomagicVariable {
     set value(newValue) {
         this.valueProperty = newValue;
     }
+
+    static valueRecomputeFunction(self, newValue) {
+        self.value = newValue;
+    };
 }
 AutomagicVariable.RecomputingAVs = [];
 
