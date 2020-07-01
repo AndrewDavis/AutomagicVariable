@@ -17,11 +17,11 @@ window.onload = function() {
     };
 
     globalThis.avm = AVMap.create('avm');
-    printLine(alignInfo('Detect AVM: ') + (avm._avm == avm ? 'not AVM' : 'is AVM'));
+    printLine(alignInfo('Detect AVM: ') + (avm._ == avm ? 'not AVM' : 'is AVM'));
     avm.var = 10;
-    printLine(alignInfo('Detect AV: ') + (avm._var && typeof(avm._var._av) == avm._var ? 'not AV' : 'is AV'));
-    printLine(alignInfo('AVM toString(), valueOf(): ') + avm.toString() + ', ' + avm.valueOf());
-    printLine(alignInfo('AV toString(), valueOf(): ') + avm._var.toString() + ', ' + avm._var.valueOf());
+    printLine(alignInfo('Detect AV: ') + (avm._.var && typeof(avm._.var._av) == avm._.var ? 'not AV' : 'is AV'));
+    printLine(alignInfo('AVM toString(), valueOf(): ') + avm._.toString() + ', ' + avm._.valueOf());
+    printLine(alignInfo('AV toString(), valueOf(): ') + avm._.var.toString() + ', ' + avm._.var.valueOf());
     printLine();
 
     avm.a = 7;
@@ -31,7 +31,7 @@ window.onload = function() {
     printLine(alignInfo('Initial a, b: ') + avm.a + ', ' + avm.b);
     avm.a = 8;
     printLine(alignInfo('Changed a to 8: ') + avm.a + ', ' + avm.b);
-    avm.c = avm._a;
+    avm.c = avm._.a;
     printLine(alignInfo('Copied a to c: ') + avm.c);
     avm.c = 10;
     printLine(alignInfo('Changed c to 10: ') + avm.a + ', ' + avm.b + ', ' + avm.c);
@@ -48,7 +48,7 @@ window.onload = function() {
     printLine(alignInfo('Initial array + last element: ') + alignRight('arr: ' + JSON.stringify(avm.arr) + ', ', 16) + 'last: ' + JSON.stringify(avm.last));
     avm.arr.push(5, 6, 7, 8);
     printLine(alignInfo('Pushed onto array: ') + alignRight('arr: ' + JSON.stringify(avm.arr) + ', ', 16) + 'last: ' + JSON.stringify(avm.last));
-    avm._arr.touched();
+    avm._.arr.touched();
     printLine(alignInfo('Marked array dirty: ') + alignRight('arr: ' + JSON.stringify(avm.arr) + ', ', 16) + 'last: ' + JSON.stringify(avm.last));
     avm.arr = [];
     printLine(alignInfo('Cleared array: ') + alignRight('arr: ' + JSON.stringify(avm.arr) + ', ', 16) + 'last: ' + JSON.stringify(avm.last));
@@ -66,7 +66,7 @@ window.onload = function() {
     avm.set.add(6);
     avm.set.add(7);
     printLine(alignInfo('Added to set: ') + JSON.stringify(Array.from(avm.set)) + ', ' + avm.sum);
-    avm._set.touched();
+    avm._.set.touched();
     printLine(alignInfo('Marked set dirty: ') + JSON.stringify(Array.from(avm.set)) + ', ' + avm.sum);
     printLine();
 
@@ -80,7 +80,7 @@ window.onload = function() {
     printLine(alignInfo('Initial i, j, k: ') + avm.i + ', ' + avm.j + ', ' + avm.k);
     avm.j = 20;
     printLine(alignInfo('Changed j: ') + avm.i + ', ' + avm.j + ', ' + avm.k);
-    avm.j = AV.autoValue(function(self, newValue) {
+    avm._.j = AV.autoValue(function(self, newValue) {
         self.value = avm.i + 1;
     });
     printLine(alignInfo('Revised j: ') + avm.i + ', ' + avm.j + ', ' + avm.k);
@@ -127,7 +127,7 @@ window.onload = function() {
         printLine(alignInfo('Testing recursion initial: ') + avm.recursion);
         avm.recursion = 10;
         printLine(alignInfo('Set recursion to 10: ') + avm.recursion);
-        avm._recursion.touch();
+        avm._.recursion.touch();
         print(alignInfo('Marked recursion as dirty: '));
         //Throws recursion error.
         printLine(avm.recursion);
@@ -150,7 +150,7 @@ window.onload = function() {
         printLine(alignInfo('Testing dual rec. initial: ') + avm.recursion1 + ', ' + avm.recursion2);
         avm.recursion1 = 10;
         printLine(alignInfo('Set recursion1 to 10: ') + avm.recursion1 + ', ' + avm.recursion2);
-        avm._recursion1.touch();
+        avm._.recursion1.touch();
         print(alignInfo('Marked recursion1 as dirty: '));
         //Throws recursion error.
         printLine(avm.recursion1 + ', ' + avm.recursion2);
@@ -215,13 +215,13 @@ window.onload = function() {
         obj = {};
     }
     e = performance.now();
-    printLine(alignInfo('1e6 objects: ') + (e - s) + 'ms');
+    printLine(alignInfo('1e6 objects create: ') + (e - s) + 'ms');
     s = performance.now();
     for (let n = 0; n < performanceIterations; ++n) {
         perfAVM = AVMap.create('perfAVM');
     }
     e = performance.now();
-    printLine(alignInfo('1e6 AVMaps: ') + (e - s) + 'ms');
+    printLine(alignInfo('1e6 AVMaps create: ') + (e - s) + 'ms');
     printLine();
 
     s = performance.now();
@@ -229,13 +229,13 @@ window.onload = function() {
         obj[n] = n;
     }
     e = performance.now();
-    printLine(alignInfo('Object of 1e6: ') + (e - s) + 'ms');
+    printLine(alignInfo('1e6 objects assign new: ') + (e - s) + 'ms');
     s = performance.now();
     for (let n = 0; n < performanceIterations; ++n) {
         perfAVM[n] = n;
     }
     e = performance.now();
-    printLine(alignInfo('AVMap of 1e6: ') + (e - s) + 'ms');
+    printLine(alignInfo('1e6 AVMaps assign new: ') + (e - s) + 'ms');
     printLine();
 
     s = performance.now();
@@ -243,12 +243,12 @@ window.onload = function() {
         ++obj[n];
     }
     e = performance.now();
-    printLine(alignInfo('Update object of 1e6: ') + (e - s) + 'ms');
+    printLine(alignInfo('1e6 objects assign: ') + (e - s) + 'ms');
     s = performance.now();
     for (let n = 0; n < performanceIterations; ++n) {
         ++perfAVM[n];
     }
     e = performance.now();
-    printLine(alignInfo('Update AVMap of 1e6: ') + (e - s) + 'ms');
+    printLine(alignInfo('1e6 AVMaps assign: ') + (e - s) + 'ms');
     printLine();
 };
