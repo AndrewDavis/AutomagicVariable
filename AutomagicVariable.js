@@ -81,17 +81,19 @@ class AutomagicVariable {
     static value(initialValue = undefined) {
         AutomagicVariable.AVNewAV = new AutomagicVariable(false);
         AutomagicVariable.AVNewAV.onRecompute = AutomagicVariable.valueRecomputeFunction;
-        AutomagicVariable.AVNewAV.value = initialValue;
+        //Setter inline.
+        AutomagicVariable.AVNewAV.valueProperty = initialValue;
         return AutomagicVariable.AVNewAV;
     }
 
     static autoValue(onRecompute) {
         AutomagicVariable.AVNewAV = new AutomagicVariable(false);
         AutomagicVariable.AVNewAV.onRecompute = function(self, newValue) {
-            if (typeof(newValue) == 'undefined') {
+            if (typeof(newValue) === 'undefined') {
                 return onRecompute(self, newValue);
             } else {
-                self.value = newValue;
+                //Setter inline.
+                self.valueProperty = newValue;
             }
         };
         AutomagicVariable.AVNewAV.recompute();
@@ -107,14 +109,18 @@ class AutomagicVariable {
 
     getUpdatedValue() {
         if (AutomagicVariable.RecomputingAVs.length > 0) {
-            if (AutomagicVariable.RecomputingAVs[0] == this) {
+            if (AutomagicVariable.RecomputingAVs[0] === this) {
                 AutomagicVariable.RecomputingAVs = [];
                 throw 'Error: AutomagicVariable recursion detected!';
             } else {
                 this.dependents.add(AutomagicVariable.RecomputingAVs[0]);
             }
         }
-        return this.value;
+        //Getter inline.
+        if (this.isDirty) {
+            this.recompute();
+        }
+        return this.valueProperty;
     }
 
     recompute(newValue = undefined) {
@@ -124,6 +130,14 @@ class AutomagicVariable {
             this.touched();
         }
         AutomagicVariable.RecomputingAVs.pop();
+    }
+
+    addDependent(addMe) {
+        this.dependents.add(addMe);
+    }
+
+    addDependency(addToMe) {
+        addToMe.addDependent(this);
     }
 
     touch() {
@@ -161,7 +175,8 @@ class AutomagicVariable {
     }
 
     static valueRecomputeFunction(self, newValue) {
-        self.value = newValue;
+        //Setter inline.
+        self.valueProperty = newValue;
     };
 }
 AutomagicVariable.RecomputingAVs = [];

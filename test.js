@@ -20,8 +20,8 @@ window.onload = function() {
     printLine(alignInfo('Detect AVM: ') + (avm._ == avm ? 'not AVM' : 'is AVM'));
     avm.var = 10;
     printLine(alignInfo('Detect AV: ') + (avm._.var && typeof(avm._.var._av) == avm._.var ? 'not AV' : 'is AV'));
-    printLine(alignInfo('AVM toString(), valueOf(): ') + avm._.toString() + ', ' + avm._.valueOf());
-    printLine(alignInfo('AV toString(), valueOf(): ') + avm._.var.toString() + ', ' + avm._.var.valueOf());
+    //printLine(alignInfo('AVM toString(), valueOf(): ') + avm._.toString() + ', ' + avm._.valueOf());
+    //printLine(alignInfo('AV toString(), valueOf(): ') + avm._.var.toString() + ', ' + avm._.var.valueOf());
     printLine();
 
     avm.a = 7;
@@ -68,6 +68,14 @@ window.onload = function() {
     printLine(alignInfo('Added to set: ') + JSON.stringify(Array.from(avm.set)) + ', ' + avm.sum);
     avm._.set.touched();
     printLine(alignInfo('Marked set dirty: ') + JSON.stringify(Array.from(avm.set)) + ', ' + avm.sum);
+    printLine();
+
+    avm.map = new Map();
+    printLine(alignInfo('Initial map: ') + JSON.stringify(Array.from(avm.map)));
+    avm.map.set(5, '!');
+    avm.map.set(6, '!');
+    avm.map.set(7, '!');
+    printLine(alignInfo('Added to map: ') + JSON.stringify(Array.from(avm.map)));
     printLine();
 
     avm.i = 0;
@@ -203,7 +211,7 @@ window.onload = function() {
     printLine();
 
     printLine('Performance testing:');
-    setTimeout(performanceTesting, 0);
+    setTimeout(performanceTesting, 50);
 };
 
 globalThis.performanceTesting = function() {
@@ -211,7 +219,7 @@ globalThis.performanceTesting = function() {
     let s;
     let e;
     let obj = {};
-    let perfAVM = AVMap.create('perfAVM');
+    let perfAVM = AVMap.create();
 
     s = performance.now();
     for (let n = 0; n < performanceIterations; ++n) {
@@ -221,7 +229,7 @@ globalThis.performanceTesting = function() {
     printLine(alignInfo('1e6 objects create: ') + (e - s) + 'ms');
     s = performance.now();
     for (let n = 0; n < performanceIterations; ++n) {
-        perfAVM = AVMap.create('perfAVM');
+        perfAVM = AVMap.create();
     }
     e = performance.now();
     printLine(alignInfo('1e6 AVMaps create: ') + (e - s) + 'ms');
