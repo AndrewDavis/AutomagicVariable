@@ -202,8 +202,11 @@ window.onload = function() {
     printLine(alignInfo('Reassign nested AVM: ') + avm.nestedAVM);
     printLine();
 
-    //Performance testing.
+    printLine('Performance testing:');
+    setTimeout(performanceTesting, 0);
+};
 
+globalThis.performanceTesting = function() {
     let performanceIterations = 1e6;
     let s;
     let e;
@@ -251,4 +254,6 @@ window.onload = function() {
     e = performance.now();
     printLine(alignInfo('1e6 AVMaps assign: ') + (e - s) + 'ms');
     printLine();
+
+    window.scrollTo(0, document.body.scrollHeight);
 };

@@ -36,13 +36,13 @@ let AVMDeletePropertyFunction = function(targetAVM, propertyName) {
     return true;
 };
 
-let AVMValueOfFunction = function(name) {
-    return name;
-};
+//let AVMValueOfFunction = function(name) {
+//    return name;
+//};
 
-let AVMToStringFunction = function() {
-    return '[AVMap (' + this.valueOf() + ')]';
-};
+//let AVMToStringFunction = function() {
+//    return '[AVMap (' + this.valueOf() + ')]';
+//};
 
 class AutomagicVariableMap {
     static create(/*name = '<>'*/) {
