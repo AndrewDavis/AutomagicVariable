@@ -16,7 +16,7 @@ window.onload = function() {
         return alignRight(alignMe, 30);
     };
 
-    globalThis.avm = AVMap.create('avm');
+    globalThis.avm = AVMap.create();
     printLine(alignInfo('Detect AVM: ') + (avm._ == avm ? 'not AVM' : 'is AVM'));
     avm.var = 10;
     printLine(alignInfo('Detect AV: ') + (avm._.var && typeof(avm._.var._av) == avm._.var ? 'not AV' : 'is AV'));
@@ -116,7 +116,7 @@ window.onload = function() {
     printLine(alignInfo('Set valid to null: ') + avm.valid);
     printLine();
 
-    globalThis.otherAVM = AVMap.create('otherAVM');
+    globalThis.otherAVM = AVMap.create();
     avm.first = 10;
     otherAVM.second = AV.auto(function(self) {
         self.value = avm.first + 1;
@@ -198,7 +198,7 @@ window.onload = function() {
     printLine(alignInfo('Got first then called: ') + classFuncBound());
     printLine();
 
-    avm.nestedAVM = AVMap.create('nestedAVM');
+    avm.nestedAVM = AVMap.create();
     avm.nestedAVM.a = 10;
     avm.nestedAVM.b = AV.auto(function(self) {
         self.value = avm.nestedAVM.a * 2;
