@@ -24,10 +24,14 @@ window.onload = function() {
     //printLine(alignInfo('AV toString(), valueOf(): ') + avm._.var.toString() + ', ' + avm._.var.valueOf());
     printLine();
 
-    avm.a = 7;
+    debugger;
     avm.b = AV.auto(function(self) {
         self.value = avm.a + 2;
     });
+    avm.b changes here...?
+    //avm.a = 7;
+    console.log(avm.a);
+    console.log(avm.b);
     printLine(alignInfo('Initial a, b: ') + avm.a + ', ' + avm.b);
     avm.a = 8;
     printLine(alignInfo('Changed a to 8: ') + avm.a + ', ' + avm.b);
@@ -262,6 +266,4 @@ globalThis.performanceTesting = function() {
     e = performance.now();
     printLine(alignInfo('1e6 AVMaps assign: ') + (e - s) + 'ms');
     printLine();
-
-    window.scrollTo(0, document.body.scrollHeight);
 };

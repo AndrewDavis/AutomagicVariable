@@ -4,11 +4,14 @@
 
 class AutomagicVariableMap {
     static create(/*name = '<>'*/) {
-        let avm = {};
-        avm._ = avm;
-        //avm.valueOf = valueOfFunction.bind(avm, name);
-        //avm.toString = toStringFunction.bind(avm);
-        return new Proxy(avm, {
+        let avmProperties = {};
+        //For terseness.
+        avmProperties._ = avmProperties;
+        //For unique differentiation from other code.
+        avmProperties._avm = avmProperties;
+        //avmProperties.valueOf = valueOfFunction.bind(avmProperties, name);
+        //avmProperties.toString = toStringFunction.bind(avmProperties);
+        return new Proxy(avmProperties, {
             get: AutomagicVariableMap.getFunction,
             set: AutomagicVariableMap.setFunction,
             deleteProperty: AutomagicVariableMap.deletePropertyFunction
@@ -16,28 +19,36 @@ class AutomagicVariableMap {
     }
 
     static getFunction(targetAVM, propertyName, receiverProxy) {
+        //See if the property is the AVM itself; if not, see if the property already exists.
         if (targetAVM[propertyName] === targetAVM) {
-            //Getting the AVM itself.
+            //Getting the AVM itself: return it.
             return targetAVM;
         } else if (typeof(targetAVM[propertyName]) !== 'undefined') {
+            //Property already exists: get and return its updated value.
             return targetAVM[propertyName].getUpdatedValue();
         } else {
-            return undefined;
+            //Property does not exist: create a new value AV with initial value of undefined.
+            targetAVM[propertyName] = AutomagicVariable.value(undefined);
+            //Also, keep track of its name.
+            //targetAVM[propertyName].name = targetAVM.valueOf() + '.' + propertyName;
         }
     };
 
     static setFunction(targetAVM, propertyName, newValue, receiverProxy) {
+        //See if the property already exists.
         if (typeof(targetAVM[propertyName]) === 'undefined') {
+            //Property does not exist. See if the new value is an AV.
             if (typeof(newValue._av) === 'undefined') {
-                //Create a new value AV.
+                //New value is not an AV: create a new value AV.
                 targetAVM[propertyName] = AutomagicVariable.value(newValue);
             } else {
-                //Assign an existing AV.
+                //New value is an existing AV: assign it.
                 targetAVM[propertyName] = newValue;
             }
             //Also, keep track of its name.
             //targetAVM[propertyName].name = targetAVM.valueOf() + '.' + propertyName;
         } else {
+            //Property already exists: assume it's an AV (should be), and recompute with the new value.
             targetAVM[propertyName].recompute(newValue);
         }
         return true;
@@ -71,32 +82,33 @@ class AutomagicVariable {
         this.isDirty = isDirty;
     }
 
-    static auto(onRecompute = AutomagicVariable.valueRecomputeFunction) {
+    static auto(onRecompute = AutomagicVariable.valueRecomputeFunction, initialValue = undefined) {
         AutomagicVariable.AVNewAV = new AutomagicVariable(true);
         AutomagicVariable.AVNewAV.onRecompute = onRecompute;
-        AutomagicVariable.AVNewAV.recompute();
+        AutomagicVariable.AVNewAV.recompute(initialValue);
+        AutomagicVariable.AVNewAV._addRecomputingDependent();
         return AutomagicVariable.AVNewAV;
     }
 
     static value(initialValue = undefined) {
         AutomagicVariable.AVNewAV = new AutomagicVariable(false);
         AutomagicVariable.AVNewAV.onRecompute = AutomagicVariable.valueRecomputeFunction;
-        //Setter inline.
-        AutomagicVariable.AVNewAV.valueProperty = initialValue;
+        AutomagicVariable.AVNewAV.recompute(initialValue);
+        AutomagicVariable.AVNewAV._addRecomputingDependent();
         return AutomagicVariable.AVNewAV;
     }
 
-    static autoValue(onRecompute) {
+    static autoValue(onRecompute, initialValue = undefined) {
         AutomagicVariable.AVNewAV = new AutomagicVariable(false);
         AutomagicVariable.AVNewAV.onRecompute = function(self, newValue) {
             if (typeof(newValue) === 'undefined') {
                 return onRecompute(self, newValue);
             } else {
-                //Setter inline.
-                self.valueProperty = newValue;
+                self.value = newValue;
             }
         };
-        AutomagicVariable.AVNewAV.recompute();
+        AutomagicVariable.AVNewAV.recompute(initialValue);
+        AutomagicVariable.AVNewAV._addRecomputingDependent();
         return AutomagicVariable.AVNewAV;
     }
 
@@ -108,19 +120,8 @@ class AutomagicVariable {
     }
 
     getUpdatedValue() {
-        if (AutomagicVariable.RecomputingAVs.length > 0) {
-            if (AutomagicVariable.RecomputingAVs[0] === this) {
-                AutomagicVariable.RecomputingAVs = [];
-                throw 'Error: AutomagicVariable recursion detected!';
-            } else {
-                this.dependents.add(AutomagicVariable.RecomputingAVs[0]);
-            }
-        }
-        //Getter inline.
-        if (this.isDirty) {
-            this.recompute();
-        }
-        return this.valueProperty;
+        this._addRecomputingDependent();
+        return this.value;
     }
 
     recompute(newValue = undefined) {
@@ -163,6 +164,17 @@ class AutomagicVariable {
     //     /\  "public" functions  /\
     //     \/ "private"  functions \/
 
+    _addRecomputingDependent() {
+        if (AutomagicVariable.RecomputingAVs.length > 0) {
+            if (AutomagicVariable.RecomputingAVs[0] === this) {
+                AutomagicVariable.RecomputingAVs = [];
+                throw 'Error: AutomagicVariable recursion detected!';
+            } else {
+                this.dependents.add(AutomagicVariable.RecomputingAVs[0]);
+            }
+        }
+    }
+
     get value() {
         if (this.isDirty) {
             this.recompute();
@@ -175,8 +187,7 @@ class AutomagicVariable {
     }
 
     static valueRecomputeFunction(self, newValue) {
-        //Setter inline.
-        self.valueProperty = newValue;
+        self.value = newValue;
     };
 }
 AutomagicVariable.RecomputingAVs = [];
