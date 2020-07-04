@@ -2,196 +2,200 @@
 
 //Code published to: https://github.com/AndrewDavis/AutomagicVariable
 
-class AutomagicVariableMap {
-    static create(/*name = '<>'*/) {
-        let avmProperties = {};
-        //For terseness.
-        avmProperties._ = avmProperties;
-        //For unique differentiation from other code.
-        avmProperties._avm = avmProperties;
-        //avmProperties.valueOf = valueOfFunction.bind(avmProperties, name);
-        //avmProperties.toString = toStringFunction.bind(avmProperties);
-        return new Proxy(avmProperties, {
-            get: AutomagicVariableMap.getFunction,
-            set: AutomagicVariableMap.setFunction,
-            deleteProperty: AutomagicVariableMap.deletePropertyFunction
+globalThis._AVTypesByName = { 'const': 0, 'val': 1, 'auto': 2 };
+globalThis._AVTypesByValue = { 0: 'const', 1: 'val', 2: 'auto' };
+
+class AVConfig {
+    constructor(avObj) {
+        this._avObj = avObj;
+        this._avObj._avMap = {};
+        this._avMap = this._avObj._avMap;
+        this.setup();
+        return new Proxy(this, {
+            get: AVConfig._getFunction,
+            set: AVConfig._setFunction
         });
     }
 
-    static getFunction(targetAVM, propertyName, receiverProxy) {
-        //See if the property is the AVM itself; if not, see if the property already exists.
-        if (targetAVM[propertyName] === targetAVM) {
-            //Getting the AVM itself: return it.
-            return targetAVM;
-        } else if (typeof(targetAVM[propertyName]) !== 'undefined') {
-            //Property already exists: get and return its updated value.
-            return targetAVM[propertyName].getUpdatedValue();
-        } else {
-            //Property does not exist: create a new value AV with initial value of undefined.
-            targetAVM[propertyName] = AutomagicVariable.value(undefined);
-            //Also, keep track of its name.
-            //targetAVM[propertyName].name = targetAVM.valueOf() + '.' + propertyName;
+    static _getFunction(targetAVConfig, propertyName/*, receiverProxy*/) {
+        AVConfig._PropertyNames.push(propertyName);
+        return targetAVConfig._avFunctions;
+    };
+
+    static _setFunction(/*targetAVConfig, propertyName, newValue, receiverProxy*/) {
+        //No!
+        return false;
+    }
+
+    get _currentPropertyName() {
+        return AVConfig._PropertyNames.pop();
+    }
+
+    setup() {
+        this._avFunctions = {
+            //Creates a constant value; no automagix necessary here.
+            const: function(value) {
+                let name = this._currentPropertyName;
+                this._ensureAVDoesntExist(name);
+                this._avMap[name] =
+                    _AutomagicVariable.const(this._avObj, name, value);
+            }.bind(this),
+
+            //Creates a value which can change, and thus can have AV subscribers.
+            val: function(value) {
+                let name = this._currentPropertyName;
+                this._ensureAVDoesntExist(name);
+                this._avMap[name] = _AutomagicVariable.val(this._avObj, name, value);
+            }.bind(this),
+
+            //Creates a value which automagically recomputes based on subscriptions to other AV's.
+            auto: function(onRecompute, value = undefined) {
+                let name = this._currentPropertyName;
+                this._ensureAVDoesntExist(name);
+                this._avMap[name] = _AutomagicVariable.auto(this._avObj, name, onRecompute, value);
+            }.bind(this),
+
+            //Creates a reference to an existing AV instance.
+            ref: function(existingAV) {
+                let name = this._currentPropertyName;
+                this._ensureAVDoesntExist(name);
+                this._avMap[name] = existingAV._ref(this._avObj, name);
+            }.bind(this),
+
+            //Returns true if an AV is mapped at the property.
+            exists: function() {
+                return (typeof(this._avMap[this._currentPropertyName]) !== 'undefined');
+            }.bind(this),
+
+            //Returns the AV mapped at the property, if any.
+            av: function() {
+                return this._avMap[this._currentPropertyName];
+            }.bind(this),
+
+            subscribeTo: function() {
+
+            }.bind(this)
+        };
+        //Gets the AV's last value, without updating it.
+        Object.defineProperty(this._avFunctions, 'last', {
+            configurable: true,
+            enumerable: true,
+            get: function() {
+                return this._avMap[this._currentPropertyName].value;
+            }.bind(this)
+        });
+    }
+
+    _ensureAVDoesntExist(name) {
+        if (typeof(this._avMap[name]) !== 'undefined') {
+            //If you really want to overwrite an existing AV, delete it first!
+            throw 'Error: Attempting to redefine an AutomagicVariable! (' + name + ')';
         }
-    };
-
-    static setFunction(targetAVM, propertyName, newValue, receiverProxy) {
-        //See if the property already exists.
-        if (typeof(targetAVM[propertyName]) === 'undefined') {
-            //Property does not exist. See if the new value is an AV.
-            if (typeof(newValue._av) === 'undefined') {
-                //New value is not an AV: create a new value AV.
-                targetAVM[propertyName] = AutomagicVariable.value(newValue);
-            } else {
-                //New value is an existing AV: assign it.
-                targetAVM[propertyName] = newValue;
-            }
-            //Also, keep track of its name.
-            //targetAVM[propertyName].name = targetAVM.valueOf() + '.' + propertyName;
-        } else {
-            //Property already exists: assume it's an AV (should be), and recompute with the new value.
-            targetAVM[propertyName].recompute(newValue);
-        }
-        return true;
-    };
-
-    static deletePropertyFunction(targetAVM, propertyName) {
-        targetAVM[propertyName].touched();
-        delete targetAVM[propertyName];
-        return true;
-    };
-
-    //static valueOfFunction(name) {
-    //    return name;
-    //};
-
-    //static toStringFunction() {
-    //    return '[AVMap (' + this.valueOf() + ')]';
-    //};
+    }
 }
+AVConfig._PropertyNames = [];
 
-class AutomagicVariable {
-    /**
-     * Do not use this constructor externally! Use auto(), value(), or autoValue() instead.
-     * @param isDirty
-     */
-    constructor(isDirty) {
-        //This begins with _ to differentiate it from any non-AV objects that might have an `av` property.
-        this._av = this;
-        this.valueProperty = null;
-        this.dependents = new Set();
-        this.isDirty = isDirty;
+//Don't use this class directly.
+class _AutomagicVariable {
+    constructor(name, type, value) {
+        this.name = name;
+        this.type = type;
+        this.value = value;
     }
 
-    static auto(onRecompute = AutomagicVariable.valueRecomputeFunction, initialValue = undefined) {
-        AutomagicVariable.AVNewAV = new AutomagicVariable(true);
-        AutomagicVariable.AVNewAV.onRecompute = onRecompute;
-        AutomagicVariable.AVNewAV.recompute(initialValue);
-        AutomagicVariable.AVNewAV._addRecomputingDependent();
-        return AutomagicVariable.AVNewAV;
-    }
-
-    static value(initialValue = undefined) {
-        AutomagicVariable.AVNewAV = new AutomagicVariable(false);
-        AutomagicVariable.AVNewAV.onRecompute = AutomagicVariable.valueRecomputeFunction;
-        AutomagicVariable.AVNewAV.recompute(initialValue);
-        AutomagicVariable.AVNewAV._addRecomputingDependent();
-        return AutomagicVariable.AVNewAV;
-    }
-
-    static autoValue(onRecompute, initialValue = undefined) {
-        AutomagicVariable.AVNewAV = new AutomagicVariable(false);
-        AutomagicVariable.AVNewAV.onRecompute = function(self, newValue) {
-            if (typeof(newValue) === 'undefined') {
-                return onRecompute(self, newValue);
-            } else {
-                self.value = newValue;
+    static const(avObj, name, value) {
+        let newAV = new _AutomagicVariable(name, _AVTypesByName.const, value);
+        newAV.subscribers = _AutomagicVariable.EmptySet;
+        newAV._desc = {
+            configurable: true,
+            enumerable: true,
+            get: function() {
+                return newAV.value;
+            },
+            set: function(newValue) {
+                //If you really want this capability, then use val()...
+                throw 'Error: Attempting to set a const value! (' + name + ', old: ' +
+                    newAV.value + ', new: ' + newValue + ')'
             }
         };
-        AutomagicVariable.AVNewAV.recompute(initialValue);
-        AutomagicVariable.AVNewAV._addRecomputingDependent();
-        return AutomagicVariable.AVNewAV;
+        Object.defineProperty(avObj, name, newAV._desc);
+        return newAV;
     }
 
-    mergeInternalsFrom(av) {
-        this.valueProperty = av.valueProperty;
-        av.dependents.forEach(this.dependents.add, this.dependents);
-        this.isDirty = av.isDirty;
-        this.onRecompute = av.onRecompute;
-    }
-
-    getUpdatedValue() {
-        this._addRecomputingDependent();
-        return this.value;
-    }
-
-    recompute(newValue = undefined) {
-        AutomagicVariable.RecomputingAVs.push(this);
-        this.isDirty = false;
-        if (this.onRecompute(this, newValue) !== false) {
-            this.touched();
-        }
-        AutomagicVariable.RecomputingAVs.pop();
-    }
-
-    addDependent(addMe) {
-        this.dependents.add(addMe);
-    }
-
-    addDependency(addToMe) {
-        addToMe.addDependent(this);
-    }
-
-    touch() {
-        this.isDirty = true;
-        this.touched();
-    }
-
-    touched() {
-        for (let dependent of this.dependents) {
-            dependent.isDirty = true;
-            dependent.touched();
-        }
-    }
-
-    //toString() {
-    //    return '[AV (' + this.name + ')]';
-    //};
-
-    //valueOf() {
-    //    return this.name;
-    //}
-
-    //     /\  "public" functions  /\
-    //     \/ "private"  functions \/
-
-    _addRecomputingDependent() {
-        if (AutomagicVariable.RecomputingAVs.length > 0) {
-            if (AutomagicVariable.RecomputingAVs[0] === this) {
-                AutomagicVariable.RecomputingAVs = [];
-                throw 'Error: AutomagicVariable recursion detected!';
-            } else {
-                this.dependents.add(AutomagicVariable.RecomputingAVs[0]);
+    static val(avObj, name, value) {
+        let newAV = new _AutomagicVariable(name, _AVTypesByName.val, value);
+        newAV.subscribers = new Set();
+        newAV._desc = {
+            configurable: true,
+            enumerable: true,
+            get: function() {
+                newAV._autoSubscribe();
+                return newAV.value;
+            },
+            set: function(newValue) {
+                newAV.value = newValue;
+                newAV._touched();
             }
+        };
+        Object.defineProperty(avObj, name, newAV._desc);
+        return newAV;
+    }
+
+    static auto(avObj, name, onRecompute, value = undefined) {
+        let newAV = new _AutomagicVariable(name, _AVTypesByName.auto, undefined);
+        newAV.subscribers = new Set();
+        newAV.onRecompute = onRecompute;
+        newAV.isDirty = false;
+        newAV._desc = {
+            configurable: true,
+            enumerable: true,
+            get: function() {
+                newAV._autoSubscribe();
+                if (newAV.isDirty) {
+                    newAV._recompute(undefined);
+                }
+                return newAV.value;
+            },
+            set: newAV._recompute(value)
+        };
+        Object.defineProperty(avObj, name, newAV._desc);
+        avObj.name = newAV;
+        return newAV;
+    }
+
+    _ref(avObj, name) {
+        Object.defineProperty(avObj, name, this._desc);
+    }
+
+    _recompute(value) {
+        _AutomagicVariable._RecomputingAVs.push(this);
+        this.isDirty = false;
+        if (this.onRecompute(this, value) !== false) {
+            this._touched();
+        }
+        _AutomagicVariable._RecomputingAVs.pop();
+    }
+
+    _touched() {
+        for (let subscriber of this.subscribers) {
+            subscriber.isDirty = true;
+            subscriber._touched();
         }
     }
 
-    get value() {
-        if (this.isDirty) {
-            this.recompute();
+    _autoSubscribe() {
+        if (_AutomagicVariable._RecomputingAVs.length > 0) {
+            _AutomagicVariable.LastRecomputingAV = _AutomagicVariable._RecomputingAVs[
+                _AutomagicVariable._RecomputingAVs.length - 1];
+            if (_AutomagicVariable.LastRecomputingAV === this) {
+                _AutomagicVariable._RecomputingAVs = [];
+                throw 'Error: Automagic Variable recursion detected! (' + this.name + ')';
+            }
+            this.subscribers.add(_AutomagicVariable.LastRecomputingAV);
         }
-        return this.valueProperty;
     }
-
-    set value(newValue) {
-        this.valueProperty = newValue;
-    }
-
-    static valueRecomputeFunction(self, newValue) {
-        self.value = newValue;
-    };
 }
-AutomagicVariable.RecomputingAVs = [];
+_AutomagicVariable.EmptySet = new Set();
+_AutomagicVariable._RecomputingAVs = [];
 
-let AVMap = AutomagicVariableMap;
-let AV = AutomagicVariable;
-module.exports = { AutomagicVariableMap, AVMap: AutomagicVariableMap, AutomagicVariable, AV: AutomagicVariable };
+//module.exports = { AVConfig };
