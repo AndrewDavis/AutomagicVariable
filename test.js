@@ -16,44 +16,52 @@ window.onload = function() {
         return alignRight(alignMe, 30);
     };
 
-    globalThis.obj = {};
-    globalThis.avc = new AVConfig(obj);
-    printLine(alignInfo('Detect AVM: ') + (obj._avMap ? 'has AVM' : 'does not have AVM'));
-    avc.var.val(10);
-    printLine(alignInfo('Detect AV: ') + (avc.var.exists() ? 'is AV' : 'not AV'));
-    printLine(alignInfo('Get AV name: ') + avc.var.av().name);
+    globalThis.avm = new AVMap();
+    printLine(alignInfo('Detect AVM: ') + (avm._avMap ? 'has AVM' : 'does not have AVM'));
+    avm.av.var.val(10);
+    printLine(alignInfo('Detect AV: ') + (avm.av.var.exists() ? 'is AV' : 'not AV'));
+    print(alignInfo('Testing reserved: '));
+    try {
+        avm.av.av.val(0);
+    } catch (e) {
+        printLine(e);
+    }
     printLine();
 
-    avc.constVar.const(7);
-    avc.a.val(obj.constVar);
-    avc.b.auto(function(self) {
-        self.value = obj.a + 2;
+    avm.av.constVar.const(7);
+    avm.av.a.val(avm.constVar);
+    avm.av.b.auto(function(self) {
+        self.value = avm.a + 2;
     });
-    printLine(alignInfo('Initial a, b: ') + obj.a + ', ' + obj.b);
-    obj.a = 8;
-    printLine(alignInfo('Changed a to 8: ') + obj.a + ', ' + obj.b);
-    avc.c.ref(avc.a.av());
-    printLine(alignInfo('Copied a to c: ') + obj.c);
-    obj.c = 10;
-    printLine(alignInfo('Changed c to 10: ') + obj.a + ', ' + obj.b + ', ' + obj.c);
+    printLine(alignInfo('Initial a, b: ') + avm.a + ', ' + avm.b);
+    avm.a = 8;
+    printLine(alignInfo('Changed a to 8: ') + avm.a + ', ' + avm.b);
+    avm.av.c.ref(avm.av.a.get());
+    printLine(alignInfo('Referenced a by c: ') + avm.c);
+    avm.c = 10;
+    printLine(alignInfo('Changed c to 10: ') + avm.a + ', ' + avm.b + ', ' + avm.c);
     printLine();
 
-    //avc.arr.val([]);
-    //avc.last.auto(function(self) {
-    //    if (avm.arr.length == 0) {
-    //        self.value = null;
-    //    } else {
-    //        self.value = avm.arr[avm.arr.length - 1];
-    //    }
-    //});
-    //printLine(alignInfo('Initial array + last element: ') + alignRight('arr: ' + JSON.stringify(avm.arr) + ', ', 16) + 'last: ' + JSON.stringify(avm.last));
-    //avm.arr.push(5, 6, 7, 8);
-    //printLine(alignInfo('Pushed onto array: ') + alignRight('arr: ' + JSON.stringify(avm.arr) + ', ', 16) + 'last: ' + JSON.stringify(avm.last));
-    //avc.arr.touched();
-    //printLine(alignInfo('Marked array dirty: ') + alignRight('arr: ' + JSON.stringify(avm.arr) + ', ', 16) + 'last: ' + JSON.stringify(avm.last));
-    //avm.arr = [];
-    //printLine(alignInfo('Cleared array: ') + alignRight('arr: ' + JSON.stringify(avm.arr) + ', ', 16) + 'last: ' + JSON.stringify(avm.last));
-    //printLine();
+    avm.av.arr.val([]);
+    avm.av.last.auto(function(self) {
+        if (avm.arr.length == 0) {
+            self.value = null;
+        } else {
+            self.value = avm.arr[avm.arr.length - 1];
+        }
+    });
+    printLine(alignInfo('Initial array + last element: ') + alignRight('arr: ' + JSON.stringify(avm.arr) + ', ', 16) + 'last: ' + JSON.stringify(avm.last));
+    avm.arr.push(5, 6, 7, 8);
+    printLine(alignInfo('Pushed onto array: ') + alignRight('arr: ' + JSON.stringify(avm.arr) + ', ', 16) + 'last: ' + JSON.stringify(avm.last));
+    avm.av.arr.touched();
+    printLine(alignInfo('Marked array dirty: ') + alignRight('arr: ' + JSON.stringify(avm.arr) + ', ', 16) + 'last: ' + JSON.stringify(avm.last));
+    avm.arr = [];
+    printLine(alignInfo('Cleared array: ') + alignRight('arr: ' + JSON.stringify(avm.arr) + ', ', 16) + 'last: ' + JSON.stringify(avm.last));
+    avm.arr.push(5, 6);
+    printLine(alignInfo('Pushed onto array: ') + alignRight('arr: ' + JSON.stringify(avm.arr) + ', ', 16) + 'last: ' + JSON.stringify(avm.last));
+    avm.av.last.recompute();
+    printLine(alignInfo('Recomputed last: ') + alignRight('arr: ' + JSON.stringify(avm.arr) + ', ', 16) + 'last: ' + JSON.stringify(avm.last));
+    printLine();
 
     //avm.set = new Set();
     //avm.sum = AV.auto(function(self) {
