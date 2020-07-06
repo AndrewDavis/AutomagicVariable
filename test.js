@@ -235,48 +235,50 @@ window.onload = function() {
 };
 
 globalThis.performanceTesting = function() {
-    let performanceIterations = 1e6;
+    let createPerformanceIterations = 1e4;
+    let newPerformanceIterations = 1e5;
+    let assignPerformanceIterations = 1e6;
     let s;
     let e;
     let obj = {};
     let perfAVM = new AVMap();
 
     s = performance.now();
-    for (let n = 0; n < performanceIterations; ++n) {
+    for (let n = 0; n < createPerformanceIterations; ++n) {
         obj = {};
     }
     e = performance.now();
-    printLine(alignInfo('1e6 objects create: ') + (e - s) + 'ms');
+    printLine(alignInfo('1e4 objects create: ') + (e - s) + 'ms');
     s = performance.now();
-    for (let n = 0; n < performanceIterations; ++n) {
+    for (let n = 0; n < createPerformanceIterations; ++n) {
         perfAVM = new AVMap();
     }
     e = performance.now();
-    printLine(alignInfo('1e6 AVMaps create: ') + (e - s) + 'ms');
+    printLine(alignInfo('1e4 AVMaps create: ') + (e - s) + 'ms');
     printLine();
 
     s = performance.now();
-    for (let n = 0; n < performanceIterations; ++n) {
+    for (let n = 0; n < newPerformanceIterations; ++n) {
         obj[n] = n;
     }
     e = performance.now();
-    printLine(alignInfo('1e6 objects assign new: ') + (e - s) + 'ms');
+    printLine(alignInfo('1e5 objects assign new: ') + (e - s) + 'ms');
     s = performance.now();
-    for (let n = 0; n < performanceIterations; ++n) {
+    for (let n = 0; n < newPerformanceIterations; ++n) {
         perfAVM.av[n] = n;
     }
     e = performance.now();
-    printLine(alignInfo('1e6 AVMaps assign new: ') + (e - s) + 'ms');
+    printLine(alignInfo('1e5 AVMaps assign new: ') + (e - s) + 'ms');
     printLine();
 
     s = performance.now();
-    for (let n = 0; n < performanceIterations; ++n) {
+    for (let n = 0; n < assignPerformanceIterations; ++n) {
         ++obj[n];
     }
     e = performance.now();
     printLine(alignInfo('1e6 objects assign: ') + (e - s) + 'ms');
     s = performance.now();
-    for (let n = 0; n < performanceIterations; ++n) {
+    for (let n = 0; n < assignPerformanceIterations; ++n) {
         ++perfAVM[n];
     }
     e = performance.now();
