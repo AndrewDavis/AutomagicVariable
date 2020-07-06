@@ -114,14 +114,7 @@ class _AVConfig {
                     _AutomagicVariable._auto(this._avObj, _AVConfig.CurrentName, _AVTypesByName.autoOnly, onRecompute);
             }.bind(this),
 
-            //Creates a reference to an existing AV instance. Pass get() here.
-            ref: function(existingAV) {
-                _AVConfig.CurrentName = this._currentPropertyName;
-                this._ensureAVDoesntExist(_AVConfig.CurrentName);
-                this._avMap[_AVConfig.CurrentName] = existingAV._ref(this._avObj, _AVConfig.CurrentName);
-            }.bind(this),
-
-            //Returns the AV mapped at the property, if any. Pass this to ref().
+            //Returns the AV mapped at the property, if any. Pass this to subscribeTo().
             get: function() {
                 return this._avMap[this._currentPropertyName];
             }.bind(this),
@@ -178,8 +171,7 @@ class _AutomagicVariable {
     static _const(avObj, name, value) {
         let newAV = new _AutomagicVariable(name, _AVTypesByName.const, value);
         newAV.subscribers = _AutomagicVariable.EmptySet;
-        //Store this in order for _ref() to work.
-        newAV._desc = {
+        Object.defineProperty(avObj, name, {
             configurable: true,
             enumerable: true,
             get: function() {
@@ -187,19 +179,17 @@ class _AutomagicVariable {
             },
             set: function(newValue) {
                 //If you really want this capability, then use val()...
-                throw 'Error: Attempting to set Automagic Variable const value "' + name + '"! (old: ' +
+                throw 'Error: Attempting to set Automagic Variable const value for "' + name + '"! (old: ' +
                     newAV.value + ', new: ' + newValue + ')'
             }
-        };
-        Object.defineProperty(avObj, name, newAV._desc);
+        });
         return newAV;
     }
 
     static _val(avObj, name, value) {
         let newAV = new _AutomagicVariable(name, _AVTypesByName.val, value);
         newAV.subscribers = new Set();
-        //Store this in order for _ref() to work.
-        newAV._desc = {
+        Object.defineProperty(avObj, name, {
             configurable: true,
             enumerable: true,
             get: function() {
@@ -210,8 +200,7 @@ class _AutomagicVariable {
                 newAV.value = newValue;
                 newAV._touched();
             }
-        };
-        Object.defineProperty(avObj, name, newAV._desc);
+        });
         return newAV;
     }
 
@@ -222,8 +211,7 @@ class _AutomagicVariable {
         newAV.isDirty = false;
         switch (type) {
             case _AVTypesByName.auto: {
-                //Store this in order for _ref() to work.
-                newAV._desc = {
+                Object.defineProperty(avObj, name, {
                     configurable: true,
                     enumerable: true,
                     get: function() {
@@ -236,12 +224,11 @@ class _AutomagicVariable {
                     set: function(value) {
                         return newAV._recompute(value);
                     }
-                };
+                });
                 break;
             }
             case _AVTypesByName.autoValue: {
-                //Store this in order for _ref() to work.
-                newAV._desc = {
+                Object.defineProperty(avObj, name, {
                     configurable: true,
                     enumerable: true,
                     get: function() {
@@ -261,12 +248,11 @@ class _AutomagicVariable {
                             newAV._touched();
                         }
                     }
-                };
+                });
                 break;
             }
             case _AVTypesByName.autoOnly: {
-                //Store this in order for _ref() to work.
-                newAV._desc = {
+                Object.defineProperty(avObj, name, {
                     configurable: true,
                     enumerable: true,
                     get: function() {
@@ -282,22 +268,21 @@ class _AutomagicVariable {
                             return newAV._recompute(value);
                         } else {
                             //Auto only.
-                            throw 'Error: Attempting to set Automagic Variable auto-only value "' + name + '"! (old: ' +
-                                newAV.value + ', new: ' + value + ')'
+                            throw 'Error: Attempting to set Automagic Variable auto-only value for "' + name +
+                                '"! (old: ' + newAV.value + ', new: ' + value + ')'
                         }
                     }
-                };
+                });
+                break;
+            }
+            default: {
+                throw 'Error: Unsupported Automagic Variable auto type "' + type + '" for "' + name + '"!';
                 break;
             }
         }
-        Object.defineProperty(avObj, name, newAV._desc);
         //Invoke the setter to recompute with the given value.
         avObj[name] = value;
         return newAV;
-    }
-
-    _ref(avObj, name) {
-        Object.defineProperty(avObj, name, this._desc);
     }
 
     _recompute(value) {
@@ -317,14 +302,9 @@ class _AutomagicVariable {
     }
 
     _autoSubscribe() {
-        if (_AutomagicVariable._RecomputingAVs.length > 0) {
-            _AutomagicVariable.LastRecomputingAV = _AutomagicVariable._RecomputingAVs[
-                _AutomagicVariable._RecomputingAVs.length - 1];
-            if (_AutomagicVariable.LastRecomputingAV === this) {
-                _AutomagicVariable._RecomputingAVs = [];
-                throw 'Error: Automagic Variable recursion detected! (' + this.name + ')';
-            }
-            this.subscribers.add(_AutomagicVariable.LastRecomputingAV);
+        _AutomagicVariable._RecomputingAVsLength = _AutomagicVariable._RecomputingAVs.length;
+        if (_AutomagicVariable._RecomputingAVsLength > 0) {
+            this.subscribers.add(_AutomagicVariable._RecomputingAVs[_AutomagicVariable._RecomputingAVsLength - 1]);
         }
     }
 
