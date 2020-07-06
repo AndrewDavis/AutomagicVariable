@@ -145,6 +145,11 @@ window.onload = function() {
     printLine(alignInfo('Deleted i: ') + avm.i + ', ' + avm.j + ', ' + avm.k);
     config.i.val(0);
     printLine(alignInfo('Recreated i: ') + avm.i + ', ' + avm.j + ', ' + avm.k);
+    delete config.j;
+    config.j.autoValue(function(self, newValue) {
+        self.value = avm.i + 1;
+    });
+    printLine(alignInfo('Recreated j: ') + avm.i + ', ' + avm.j + ', ' + avm.k);
     printLine();
 
     config.valid.auto(function(self, newValue) {
