@@ -2,25 +2,39 @@
 
 //Code published to: https://github.com/AndrewDavis/AutomagicVariable
 
-globalThis._AVTypesByName = { 'const': 0, 'val': 1, 'auto': 2 };
-globalThis._AVTypesByValue = { 0: 'const', 1: 'val', 2: 'auto' };
+const  _AVOptimize = true;
+globalThis._AVOptimize = _AVOptimize;
+
+globalThis._AVTypesByName = { 'const': 0, 'val': 1, 'auto': 2, 'autoValue': 3, 'autoOnly': 4 };
+globalThis._AVTypesByValue = { 0: 'const', 1: 'val', 2: 'auto', 3: 'autoValue', 4: 'autoOnly' };
 
 class AVMap {
     constructor(avConfigPropertyName = 'av') {
-        this[avConfigPropertyName] = new _AVConfig(this, avConfigPropertyName);
+        if (!_AVOptimize) {
+            this._configPropertyName = avConfigPropertyName;
+        }
+        Object.defineProperty(this, avConfigPropertyName, {
+            configurable: false,
+            enumerable: true,
+            value: new _AVConfig(this, avConfigPropertyName),
+            writable: false
+        });
     }
 }
 
-//Don't use this class directly.
+//Don't use this class directly. This is basically a decorator of AVMap, which will have internal _AutomagicVariable
+//instances and externally-facing getters and setters.
 class _AVConfig {
     constructor(avObj, avConfigPropertyName) {
-        //The actual AVMap class, with the getters and setters for each property.
+        //The actual AVMap class, with the externally-facing getters and setters for each property.
         this._avObj = avObj;
-        this.avConfigPropertyName = avConfigPropertyName;
+        if (!_AVOptimize) {
+            this._name = avConfigPropertyName;
+        }
         //An internal mapping of the AVMap class, with the actual _AutomagicVariable instances for each property.
         this._avObj._avMap = {};
         this._avMap = this._avObj._avMap;
-        this.setup();
+        this._setup();
         return new Proxy(this, {
             get: _AVConfig._getFunction,
             set: _AVConfig._setFunction,
@@ -39,8 +53,8 @@ class _AVConfig {
     }
 
     static _deletePropertyFunction(targetAVConfig, propertyName) {
-        if (propertyName == this.avConfigPropertyName) {
-            throw 'Error: Attempting to delete a reserved property name! (' + this.avConfigPropertyName + ')';
+        if (typeof(targetAVConfig._avMap[propertyName]) === 'undefined') {
+            throw 'Error: Attempting to delete non-existent Automagic Variable ' + propertyName + '!';
         }
         targetAVConfig._avMap[propertyName]._touched();
         delete targetAVConfig._avObj[propertyName];
@@ -50,20 +64,17 @@ class _AVConfig {
 
     get _currentPropertyName() {
         _AVConfig.TestPropertyName = _AVConfig._PropertyNames.pop()
-        if (_AVConfig.TestPropertyName == this.avConfigPropertyName) {
-            throw 'Error: Attempting to define a reserved property name! (' + this.avConfigPropertyName + ')';
-        }
         return _AVConfig.TestPropertyName;
     }
 
-    setup() {
+    _setup() {
         this._avFunctions = {
             //Creates a constant value; no automagix necessary here.
             const: function(value) {
                 _AVConfig.CurrentName = this._currentPropertyName;
                 this._ensureAVDoesntExist(_AVConfig.CurrentName);
                 this._avMap[_AVConfig.CurrentName] =
-                    _AutomagicVariable.const(this._avObj, _AVConfig.CurrentName, value);
+                    _AutomagicVariable._const(this._avObj, _AVConfig.CurrentName, value);
             }.bind(this),
 
             //Creates a value which can change, and thus can have AV subscribers.
@@ -71,15 +82,36 @@ class _AVConfig {
                 _AVConfig.CurrentName = this._currentPropertyName;
                 this._ensureAVDoesntExist(_AVConfig.CurrentName);
                 this._avMap[_AVConfig.CurrentName] =
-                    _AutomagicVariable.val(this._avObj, _AVConfig.CurrentName, value);
+                    _AutomagicVariable._val(this._avObj, _AVConfig.CurrentName, value);
             }.bind(this),
 
-            //Creates a value which automagically recomputes based on subscriptions to other AV's.
+            //Creates a value which automagically recomputes based on subscriptions to other AV's, and handles any set
+            //values in the recompute function.
             auto: function(onRecompute, value = undefined) {
                 _AVConfig.CurrentName = this._currentPropertyName;
                 this._ensureAVDoesntExist(_AVConfig.CurrentName);
                 this._avMap[_AVConfig.CurrentName] =
-                    _AutomagicVariable.auto(this._avObj, _AVConfig.CurrentName, onRecompute, value);
+                    _AutomagicVariable._auto(this._avObj, _AVConfig.CurrentName, _AVTypesByName.auto,
+                        onRecompute, value);
+            }.bind(this),
+
+            //Creates a value which automagically recomputes based on subscriptions to other AV's, and handles any set
+            //values by changing out the internal value.
+            autoValue: function(onRecompute, value = undefined) {
+                _AVConfig.CurrentName = this._currentPropertyName;
+                this._ensureAVDoesntExist(_AVConfig.CurrentName);
+                this._avMap[_AVConfig.CurrentName] =
+                    _AutomagicVariable._auto(this._avObj, _AVConfig.CurrentName, _AVTypesByName.autoValue,
+                        onRecompute, value);
+            }.bind(this),
+
+            //Creates a value which automagically recomputes based on subscriptions to other AV's, and blocks any set
+            //values.
+            autoOnly: function(onRecompute, value = undefined) {
+                _AVConfig.CurrentName = this._currentPropertyName;
+                this._ensureAVDoesntExist(_AVConfig.CurrentName);
+                this._avMap[_AVConfig.CurrentName] =
+                    _AutomagicVariable._auto(this._avObj, _AVConfig.CurrentName, _AVTypesByName.autoOnly, onRecompute);
             }.bind(this),
 
             //Creates a reference to an existing AV instance. Pass get() here.
@@ -127,7 +159,7 @@ class _AVConfig {
     _ensureAVDoesntExist(name) {
         if (typeof(this._avMap[name]) !== 'undefined') {
             //If you really want to overwrite an existing AV, delete it first!
-            throw 'Error: Attempting to redefine an AutomagicVariable! (' + name + ')';
+            throw 'Error: Attempting to redefine Automagic Variable "' + name + '" (delete first)!';
         }
     }
 }
@@ -136,14 +168,17 @@ _AVConfig._PropertyNames = [];
 //Don't use this class directly.
 class _AutomagicVariable {
     constructor(name, type, value) {
-        this.name = name;
-        this.type = type;
+        if (!_AVOptimize) {
+            this._name = name;
+            this._type = type;
+        }
         this.value = value;
     }
 
-    static const(avObj, name, value) {
+    static _const(avObj, name, value) {
         let newAV = new _AutomagicVariable(name, _AVTypesByName.const, value);
         newAV.subscribers = _AutomagicVariable.EmptySet;
+        //Store this in order for _ref() to work.
         newAV._desc = {
             configurable: true,
             enumerable: true,
@@ -152,7 +187,7 @@ class _AutomagicVariable {
             },
             set: function(newValue) {
                 //If you really want this capability, then use val()...
-                throw 'Error: Attempting to set a const value! (' + name + ', old: ' +
+                throw 'Error: Attempting to set Automagic Variable const value "' + name + '"! (old: ' +
                     newAV.value + ', new: ' + newValue + ')'
             }
         };
@@ -160,9 +195,10 @@ class _AutomagicVariable {
         return newAV;
     }
 
-    static val(avObj, name, value) {
+    static _val(avObj, name, value) {
         let newAV = new _AutomagicVariable(name, _AVTypesByName.val, value);
         newAV.subscribers = new Set();
+        //Store this in order for _ref() to work.
         newAV._desc = {
             configurable: true,
             enumerable: true,
@@ -179,26 +215,83 @@ class _AutomagicVariable {
         return newAV;
     }
 
-    static auto(avObj, name, onRecompute, value = undefined) {
-        let newAV = new _AutomagicVariable(name, _AVTypesByName.auto, undefined);
+    static _auto(avObj, name, type, onRecompute, value = undefined) {
+        let newAV = new _AutomagicVariable(name, type, undefined);
         newAV.subscribers = new Set();
         newAV.onRecompute = onRecompute;
         newAV.isDirty = false;
-        newAV._desc = {
-            configurable: true,
-            enumerable: true,
-            get: function() {
-                newAV._autoSubscribe();
-                if (newAV.isDirty) {
-                    newAV._recompute(undefined);
-                }
-                return newAV.value;
-            },
-            set: function(value) {
-                return newAV._recompute(value);
+        switch (type) {
+            case _AVTypesByName.auto: {
+                //Store this in order for _ref() to work.
+                newAV._desc = {
+                    configurable: true,
+                    enumerable: true,
+                    get: function() {
+                        newAV._autoSubscribe();
+                        if (newAV.isDirty) {
+                            newAV._recompute(undefined);
+                        }
+                        return newAV.value;
+                    },
+                    set: function(value) {
+                        return newAV._recompute(value);
+                    }
+                };
+                break;
             }
-        };
+            case _AVTypesByName.autoValue: {
+                //Store this in order for _ref() to work.
+                newAV._desc = {
+                    configurable: true,
+                    enumerable: true,
+                    get: function() {
+                        newAV._autoSubscribe();
+                        if (newAV.isDirty) {
+                            newAV._recompute(undefined);
+                        }
+                        return newAV.value;
+                    },
+                    set: function(value) {
+                        if (typeof(value) === 'undefined') {
+                            //Auto.
+                            return newAV._recompute(value);
+                        } else {
+                            //Value.
+                            newAV.value = value;
+                            newAV._touched();
+                        }
+                    }
+                };
+                break;
+            }
+            case _AVTypesByName.autoOnly: {
+                //Store this in order for _ref() to work.
+                newAV._desc = {
+                    configurable: true,
+                    enumerable: true,
+                    get: function() {
+                        newAV._autoSubscribe();
+                        if (newAV.isDirty) {
+                            newAV._recompute(undefined);
+                        }
+                        return newAV.value;
+                    },
+                    set: function(value) {
+                        if (typeof(value) === 'undefined') {
+                            //Auto.
+                            return newAV._recompute(value);
+                        } else {
+                            //Auto only.
+                            throw 'Error: Attempting to set Automagic Variable auto-only value "' + name + '"! (old: ' +
+                                newAV.value + ', new: ' + value + ')'
+                        }
+                    }
+                };
+                break;
+            }
+        }
         Object.defineProperty(avObj, name, newAV._desc);
+        //Invoke the setter to recompute with the given value.
         avObj[name] = value;
         return newAV;
     }

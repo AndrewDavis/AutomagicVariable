@@ -18,8 +18,10 @@ window.onload = function() {
 
     globalThis.avm = new AVMap();
     printLine(alignInfo('Detect AVM: ') + (avm._avMap ? 'has AVM' : 'does not have AVM'));
+    //printLine(alignInfo('Get config property name: ') + avm._configPropertyName);
     avm.av.var.val(10);
     printLine(alignInfo('Detect AV: ') + (avm.av.var.exists() ? 'is AV' : 'not AV'));
+    //printLine(alignInfo('Get AV property name: ') + avm.av.var.get().name);
     print(alignInfo('Testing reserved: '));
     try {
         avm.av.av.val(0);
@@ -29,6 +31,13 @@ window.onload = function() {
     printLine();
 
     avm.av.constVar.const(7);
+    print(alignInfo('Changing constVar: '));
+    try {
+        avm.constVar = 10;
+    } catch (e) {
+        printLine(e);
+    }
+    printLine(alignInfo('constVar: ') + avm.constVar);
     avm.av.a.val(avm.constVar);
     avm.av.b.auto(function(self) {
         self.value = avm.a + 2;
@@ -63,55 +72,95 @@ window.onload = function() {
     printLine(alignInfo('Recomputed last: ') + alignRight('arr: ' + JSON.stringify(avm.arr) + ', ', 16) + 'last: ' + JSON.stringify(avm.last));
     printLine();
 
-    //avm.set = new Set();
-    //avm.sum = AV.auto(function(self) {
-    //    self.value = 0.0;
-    //    for (let item of avm.set) {
-    //        self.value += item;
-    //    }
-    //});
-    //printLine(alignInfo('Initial set and sum: ') + JSON.stringify(Array.from(avm.set)) + ', ' + avm.sum);
-    //avm.set.add(5);
-    //avm.set.add(6);
-    //avm.set.add(7);
-    //printLine(alignInfo('Added to set: ') + JSON.stringify(Array.from(avm.set)) + ', ' + avm.sum);
-    //avm._.set.touched();
-    //printLine(alignInfo('Marked set dirty: ') + JSON.stringify(Array.from(avm.set)) + ', ' + avm.sum);
-    //printLine();
+    avm.av.set.val(new Set());
+    avm.av.sum.auto(function(self) {
+        let sum = 0.0;
+        sum = 0.0;
+        for (let item of avm.set) {
+            sum += item;
+        }
+        self.value = sum;
+    });
+    printLine(alignInfo('Initial set and sum: ') + JSON.stringify(Array.from(avm.set)) + ', ' + avm.sum);
+    avm.set.add(5);
+    avm.set.add(6);
+    avm.set.add(7);
+    printLine(alignInfo('Added to set: ') + JSON.stringify(Array.from(avm.set)) + ', ' + avm.sum);
+    avm.av.set.touched();
+    printLine(alignInfo('Marked set dirty: ') + JSON.stringify(Array.from(avm.set)) + ', ' + avm.sum);
+    printLine();
 
-    //avm.map = new Map();
-    //printLine(alignInfo('Initial map: ') + JSON.stringify(Array.from(avm.map)));
-    //avm.map.set(5, '!');
-    //avm.map.set(6, '!');
-    //avm.map.set(7, '!');
-    //printLine(alignInfo('Added to map: ') + JSON.stringify(Array.from(avm.map)));
-    //printLine();
+    avm.av.map.val(new Map());
+    printLine(alignInfo('Initial map: ') + JSON.stringify(Array.from(avm.map)));
+    avm.map.set(5, '!');
+    avm.map.set(6, '!');
+    avm.map.set(7, '!');
+    printLine(alignInfo('Added to map: ') + JSON.stringify(Array.from(avm.map)));
+    printLine();
 
-    //avm.i = 0;
-    //avm.j = AV.auto(function(self) {
-    //    self.value = avm.i + 1;
-    //});
-    //avm.k = AV.auto(function(self) {
-    //    self.value = avm.j + 1;
-    //});
-    //printLine(alignInfo('Initial i, j, k: ') + avm.i + ', ' + avm.j + ', ' + avm.k);
-    //avm.j = 20;
-    //printLine(alignInfo('Changed j: ') + avm.i + ', ' + avm.j + ', ' + avm.k);
-    //avm._.j = AV.autoValue(function(self, newValue) {
-    //    self.value = avm.i + 1;
-    //});
-    //printLine(alignInfo('Revised j: ') + avm.i + ', ' + avm.j + ', ' + avm.k);
-    //avm.j = 20;
-    //printLine(alignInfo('Changed j: ') + avm.i + ', ' + avm.j + ', ' + avm.k);
-    //avm.i = 5;
-    //printLine(alignInfo('Changed i: ') + avm.i + ', ' + avm.j + ', ' + avm.k);
-    //delete avm.k;
-    //printLine(alignInfo('Deleted k: ') + avm.i + ', ' + avm.j + ', ' + avm.k);
-    //avm.i = 0;
-    //printLine(alignInfo('Changed i: ') + avm.i + ', ' + avm.j + ', ' + avm.k);
-    //delete avm.i;
-    //printLine(alignInfo('Deleted i: ') + avm.i + ', ' + avm.j + ', ' + avm.k);
-    //printLine();
+    avm.av.i.val(0);
+    avm.av.j.auto(function(self) {
+        self.value = avm.i + 1;
+    });
+    avm.av.k.auto(function(self) {
+        self.value = avm.j + 1;
+    });
+    printLine(alignInfo('Initial i, j, k: ') + avm.i + ', ' + avm.j + ', ' + avm.k);
+    avm.j = 20;
+    printLine(alignInfo('Changed j: ') + avm.i + ', ' + avm.j + ', ' + avm.k);
+    print(alignInfo('Revising j without deleting: '));
+    try {
+        avm.av.j.autoValue(function(self, newValue) {
+            self.value = avm.i + 1;
+        });
+    } catch (e) {
+        printLine(e);
+    }
+    delete avm.av.j;
+    avm.av.j.autoValue(function(self, newValue) {
+        self.value = avm.i + 1;
+    });
+    printLine(alignInfo('Deleted and revised j: ') + avm.i + ', ' + avm.j + ', ' + avm.k);
+    avm.j = 20;
+    printLine(alignInfo('Changed j: ') + avm.i + ', ' + avm.j + ', ' + avm.k);
+    avm.i = 5;
+    printLine(alignInfo('Changed i: ') + avm.i + ', ' + avm.j + ', ' + avm.k);
+    delete avm.av.j;
+    avm.av.j.autoOnly(function(self, newValue) {
+        self.value = avm.i + 1;
+    });
+    printLine(alignInfo('Deleted and revised j: ') + avm.i + ', ' + avm.j + ', ' + avm.k);
+    print(alignInfo('Changing j: '));
+    try {
+        avm.j = 20;
+    } catch (e) {
+        printLine(e);
+    }
+    avm.i = 100;
+    printLine(alignInfo('Changed i: ') + avm.i + ', ' + avm.j + ', ' + avm.k);
+    avm.av.iRef.ref(avm.av.i.get());
+    avm.av.kRef.ref(avm.av.k.get());
+    printLine(alignInfo('iRef &= i; kRef &= k: ') +
+        'i: ' + avm.i + ', iRef: ' + avm.iRef + ', j: ' + avm.j + ', k: ' + avm.k + ', kRef: ' + avm.kRef);
+    delete avm.av.k;
+    printLine(alignInfo('Deleted k: ') +
+        'i: ' + avm.i + ', iRef: ' + avm.iRef + ', j: ' + avm.j + ', k: ' + avm.k + ', kRef: ' + avm.kRef);
+    avm.i = 0;
+    printLine(alignInfo('Changed i: ') +
+        'i: ' + avm.i + ', iRef: ' + avm.iRef + ', j: ' + avm.j + ', k: ' + avm.k + ', kRef: ' + avm.kRef);
+    print(alignInfo('Deleting iRef: '));
+    try {
+        delete avm.av.iRef;
+    } catch (e) {
+        printLine(e);
+    }
+    delete avm.av.i;
+    printLine(alignInfo('Deleted i: ') +
+        'i: ' + avm.i + ', iRef: ' + avm.iRef + ', j: ' + avm.j + ', k: ' + avm.k + ', kRef: ' + avm.kRef);
+    avm.av.i.val(0);
+    printLine(alignInfo('Recreated i: ') +
+        'i: ' + avm.i + ', iRef: ' + avm.iRef + ', j: ' + avm.j + ', k: ' + avm.k + ', kRef: ' + avm.kRef);
+    printLine();
 
     //avm.valid = AV.auto(function(self, newValue) {
     //    if (newValue != null) {
