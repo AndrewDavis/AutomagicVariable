@@ -167,131 +167,119 @@ window.onload = function() {
     printLine(alignInfo('Testing 2 AVM\'s: ') + avm.first + ', ' + otherAVM.second);
     printLine();
 
-    try {
-        print(alignInfo('Invoking recursion: '));
-        config.recursion.auto(function(self, newValue) {
-            if (typeof(newValue) === 'undefined') {
-                self.value = avm.recursion;
-            } else {
-                self.value = newValue;
+    //Throws recursion errors and thus breaks the rest of the tests.
+    //try {
+    //    print(alignInfo('Invoking recursion: '));
+    //    //Throws recursion error.
+    //    config.recursion.auto(function(self, newValue) {
+    //        if (typeof(newValue) === 'undefined') {
+    //            self.value = avm.recursion;
+    //        } else {
+    //            self.value = newValue;
+    //        }
+    //    });
+    //} catch (e) {
+    //    printLine(e);
+    //}
+    //try {
+    //    config.recursion1.auto(function(self, newValue) {
+    //        if (typeof(newValue) === 'undefined') {
+    //            self.value = avm.recursion2;
+    //        } else {
+    //            self.value = newValue;
+    //        }
+    //    });
+    //    config.recursion2.auto(function(self) {
+    //        self.value = avm.recursion1;
+    //    });
+    //    avm.recursion1 = 10;
+    //    print(alignInfo('Invoking dual recursion: '));
+    //    //Throws recursion error.
+    //    print(avm.recursion2);
+    //} catch (e) {
+    //    printLine(e);
+    //}
+    //printLine();
+
+    c = new (class {
+        constructor() {
+            this.property = 'class property';
+            config.classFuncUnbound = function() {
+                return this.property;
             }
-        });
-    } catch (e) {
-        printLine(e);
-    }
-    try {
-        config.recursion1.auto(function(self, newValue) {
-            if (typeof(newValue) === 'undefined') {
-                self.value = avm.recursion2;
-            } else {
-                self.value = newValue;
-            }
-        });
-        config.recursion2.auto(function(self) {
-            self.value = avm.recursion1;
-        });
-        avm.recursion1 = 10;
-        print(alignInfo('Invoking dual recursion: '));
-        //Throws recursion error.
-        print(avm.recursion2);
-    } catch (e) {
-        printLine(e);
-    }
+            config.classFuncBound = function() {
+                return this.property;
+            }.bind(this);
+        }
+    })();
+    printLine(alignInfo('Class function unbound: ') + avm.classFuncUnbound());
+    printLine(alignInfo('Class function bound: ') + avm.classFuncBound());
+    let classFuncBound = avm.classFuncBound;
+    printLine(alignInfo('Got first then called: ') + classFuncBound());
     printLine();
 
-    //function f() {
-    //    avm.fValue = 'f() called at ' + performance.now() + 'ms';
-    //};
-    //printLine(alignInfo('Function listener initial: ') + avm.fValue);
-    //f();
-    //printLine(alignInfo('Function listener after call: ') + avm.fValue);
-    //let passTime = performance.now();
-    //while (performance.now() == passTime) {
+    config.nestedAVM.val(new AVMap());
+    avm.nestedAVM.av.a = 10;
+    avm.nestedAVM.av.b.auto(function(self) {
+        self.value = avm.nestedAVM.a * 2;
+    });
+    printLine(alignInfo('Nested AVM initial a, b: ') + avm.nestedAVM.a + ', ' + avm.nestedAVM.b);
+    avm.nestedAVM.a = 15;
+    printLine(alignInfo('Nested AVM changed a: ') + avm.nestedAVM.a + ', ' + avm.nestedAVM.b);
+    avm.nestedAVM = 'str';
+    printLine(alignInfo('Reassign nested AVM: ') + avm.nestedAVM);
+    printLine();
 
-    //}
-    //f();
-    //printLine(alignInfo('Called again (delayed): ') + avm.fValue);
-    //printLine();
-
-    //c = new (class {
-    //    constructor() {
-    //        this.property = 'class property';
-    //        avm.classFuncUnbound = function() {
-    //            return this.property;
-    //        }
-    //        avm.classFuncBound = function() {
-    //            return this.property;
-    //        }.bind(this);
-    //    }
-    //})();
-    //printLine(alignInfo('Class function unbound: ') + avm.classFuncUnbound());
-    //printLine(alignInfo('Class function bound: ') + avm.classFuncBound());
-    //let classFuncBound = avm.classFuncBound;
-    //printLine(alignInfo('Got first then called: ') + classFuncBound());
-    //printLine();
-
-    //avm.nestedAVM = AVMap.create();
-    //avm.nestedAVM.a = 10;
-    //avm.nestedAVM.b = AV.auto(function(self) {
-    //    self.value = avm.nestedAVM.a * 2;
-    //});
-    //printLine(alignInfo('Nested AVM initial a, b: ') + avm.nestedAVM.a + ', ' + avm.nestedAVM.b);
-    //avm.nestedAVM.a = 15;
-    //printLine(alignInfo('Nested AVM changed a: ') + avm.nestedAVM.a + ', ' + avm.nestedAVM.b);
-    //avm.nestedAVM = 'str';
-    //printLine(alignInfo('Reassign nested AVM: ') + avm.nestedAVM);
-    //printLine();
-
-    //printLine('Performance testing:');
-    //setTimeout(performanceTesting, 50);
+    printLine('Performance testing:');
+    setTimeout(performanceTesting, 50);
 };
 
-//globalThis.performanceTesting = function() {
-//    let performanceIterations = 1e6;
-//    let s;
-//    let e;
-//    let obj = {};
-//    let perfAVM = AVMap.create();
+globalThis.performanceTesting = function() {
+    let performanceIterations = 1e6;
+    let s;
+    let e;
+    let obj = {};
+    let perfAVM = new AVMap();
 
-//    s = performance.now();
-//    for (let n = 0; n < performanceIterations; ++n) {
-//        obj = {};
-//    }
-//    e = performance.now();
-//    printLine(alignInfo('1e6 objects create: ') + (e - s) + 'ms');
-//    s = performance.now();
-//    for (let n = 0; n < performanceIterations; ++n) {
-//        perfAVM = AVMap.create();
-//    }
-//    e = performance.now();
-//    printLine(alignInfo('1e6 AVMaps create: ') + (e - s) + 'ms');
-//    printLine();
+    s = performance.now();
+    for (let n = 0; n < performanceIterations; ++n) {
+        obj = {};
+    }
+    e = performance.now();
+    printLine(alignInfo('1e6 objects create: ') + (e - s) + 'ms');
+    s = performance.now();
+    for (let n = 0; n < performanceIterations; ++n) {
+        perfAVM = new AVMap();
+    }
+    e = performance.now();
+    printLine(alignInfo('1e6 AVMaps create: ') + (e - s) + 'ms');
+    printLine();
 
-//    s = performance.now();
-//    for (let n = 0; n < performanceIterations; ++n) {
-//        obj[n] = n;
-//    }
-//    e = performance.now();
-//    printLine(alignInfo('1e6 objects assign new: ') + (e - s) + 'ms');
-//    s = performance.now();
-//    for (let n = 0; n < performanceIterations; ++n) {
-//        perfAVM[n] = n;
-//    }
-//    e = performance.now();
-//    printLine(alignInfo('1e6 AVMaps assign new: ') + (e - s) + 'ms');
-//    printLine();
+    s = performance.now();
+    for (let n = 0; n < performanceIterations; ++n) {
+        obj[n] = n;
+    }
+    e = performance.now();
+    printLine(alignInfo('1e6 objects assign new: ') + (e - s) + 'ms');
+    s = performance.now();
+    for (let n = 0; n < performanceIterations; ++n) {
+        perfAVM.av[n] = n;
+    }
+    e = performance.now();
+    printLine(alignInfo('1e6 AVMaps assign new: ') + (e - s) + 'ms');
+    printLine();
 
-//    s = performance.now();
-//    for (let n = 0; n < performanceIterations; ++n) {
-//        ++obj[n];
-//    }
-//    e = performance.now();
-//    printLine(alignInfo('1e6 objects assign: ') + (e - s) + 'ms');
-//    s = performance.now();
-//    for (let n = 0; n < performanceIterations; ++n) {
-//        ++perfAVM[n];
-//    }
-//    e = performance.now();
-//    printLine(alignInfo('1e6 AVMaps assign: ') + (e - s) + 'ms');
-//    printLine();
-//};
+    s = performance.now();
+    for (let n = 0; n < performanceIterations; ++n) {
+        ++obj[n];
+    }
+    e = performance.now();
+    printLine(alignInfo('1e6 objects assign: ') + (e - s) + 'ms');
+    s = performance.now();
+    for (let n = 0; n < performanceIterations; ++n) {
+        ++perfAVM[n];
+    }
+    e = performance.now();
+    printLine(alignInfo('1e6 AVMaps assign: ') + (e - s) + 'ms');
+    printLine();
+};

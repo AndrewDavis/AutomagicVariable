@@ -47,9 +47,11 @@ class _AVConfig {
         return targetAVConfig._avFunctions;
     };
 
-    static _setFunction(/*targetAVConfig, propertyName, newValue, receiverProxy*/) {
-        //No!
-        return false;
+    static _setFunction(targetAVConfig, propertyName, newValue/*, receiverProxy*/) {
+        //Invoke val();
+        _AVConfig._PropertyNames.push(propertyName);
+        targetAVConfig._avFunctions.val(newValue);
+        return true;
     }
 
     static _deletePropertyFunction(targetAVConfig, propertyName) {
