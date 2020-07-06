@@ -224,7 +224,7 @@ class _AutomagicVariable {
                         return newAV.value;
                     },
                     set: function(value) {
-                        return newAV._recompute(value);
+                        newAV._recompute(value);
                     }
                 });
                 break;
@@ -243,7 +243,7 @@ class _AutomagicVariable {
                     set: function(value) {
                         if (typeof(value) === 'undefined') {
                             //Auto.
-                            return newAV._recompute(value);
+                            newAV._recompute(value);
                         } else {
                             //Value.
                             newAV.value = value;
@@ -267,7 +267,7 @@ class _AutomagicVariable {
                     set: function(value) {
                         if (typeof(value) === 'undefined') {
                             //Auto.
-                            return newAV._recompute(value);
+                            newAV._recompute(value);
                         } else {
                             //Auto only.
                             throw 'Error: Attempting to set Automagic Variable auto-only value for "' + name +

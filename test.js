@@ -237,7 +237,7 @@ window.onload = function() {
 globalThis.performanceTesting = function() {
     let createPerformanceIterations = 1e4;
     let newPerformanceIterations = 1e5;
-    let assignPerformanceIterations = 1e6;
+    let assignPerformanceIterations = 1e7;
     let s;
     let e;
     let obj = {};
@@ -276,12 +276,23 @@ globalThis.performanceTesting = function() {
         ++obj[n];
     }
     e = performance.now();
-    printLine(alignInfo('1e6 objects assign: ') + (e - s) + 'ms');
+    printLine(alignInfo('1e7 objects assign only: ') + (e - s) + 'ms');
+    let q = {};
+    s = performance.now();
+    function fakeNotify(n, objN) {
+        q[n] = objN;
+    }
+    for (let n = 0; n < assignPerformanceIterations; ++n) {
+        ++obj[n];
+        fakeNotify(n, obj[n]);
+    }
+    e = performance.now();
+    printLine(alignInfo('1e7 objects assign + notify: ') + (e - s) + 'ms');
     s = performance.now();
     for (let n = 0; n < assignPerformanceIterations; ++n) {
         ++perfAVM[n];
     }
     e = performance.now();
-    printLine(alignInfo('1e6 AVMaps assign: ') + (e - s) + 'ms');
+    printLine(alignInfo('1e7 AVMaps assign: ') + (e - s) + 'ms');
     printLine();
 };
