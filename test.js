@@ -109,14 +109,14 @@ window.onload = function() {
     printLine(alignInfo('Changed j: ') + avm.i + ', ' + avm.j + ', ' + avm.k);
     print(alignInfo('Revising j without deleting: '));
     try {
-        config.j.autoValue(function(self, newValue) {
+        config.j.autoVal(function(self, newValue) {
             self.value = avm.i + 1;
         });
     } catch (e) {
         printLine(e);
     }
     delete config.j;
-    config.j.autoValue(function(self, newValue) {
+    config.j.autoVal(function(self, newValue) {
         self.value = avm.i + 1;
     });
     printLine(alignInfo('Deleted and revised j: ') + avm.i + ', ' + avm.j + ', ' + avm.k);
@@ -146,7 +146,7 @@ window.onload = function() {
     config.i.val(0);
     printLine(alignInfo('Recreated i: ') + avm.i + ', ' + avm.j + ', ' + avm.k);
     delete config.j;
-    config.j.autoValue(function(self, newValue) {
+    config.j.autoVal(function(self, newValue) {
         self.value = avm.i + 1;
     });
     printLine(alignInfo('Recreated j: ') + avm.i + ', ' + avm.j + ', ' + avm.k);

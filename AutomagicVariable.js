@@ -5,8 +5,8 @@
 //const  _AVOptimize = true;
 //globalThis._AVOptimize = _AVOptimize;
 
-globalThis._AVTypesByName = { 'const': 0, 'val': 1, 'auto': 2, 'autoValue': 3, 'autoOnly': 4 };
-globalThis._AVTypesByValue = { 0: 'const', 1: 'val', 2: 'auto', 3: 'autoValue', 4: 'autoOnly' };
+globalThis._AVTypesByName = { 'const': 0, 'val': 1, 'auto': 2, 'autoVal': 3, 'autoOnly': 4 };
+globalThis._AVTypesByValue = { 0: 'const', 1: 'val', 2: 'auto', 3: 'autoVal', 4: 'autoOnly' };
 
 class AVMap {
     constructor(avConfigPropertyName = 'av') {
@@ -99,11 +99,11 @@ class _AVConfig {
 
             //Creates a value which automagically recomputes based on subscriptions to other AV's, and handles any set
             //values by changing out the internal value.
-            autoValue: function(onRecompute, value = undefined) {
+            autoVal: function(onRecompute, value = undefined) {
                 _AVConfig.CurrentName = this._currentPropertyName;
                 this._ensureAVDoesntExist(_AVConfig.CurrentName);
                 this._avMap[_AVConfig.CurrentName] =
-                    _AutomagicVariable._auto(this._avObj, _AVConfig.CurrentName, _AVTypesByName.autoValue,
+                    _AutomagicVariable._auto(this._avObj, _AVConfig.CurrentName, _AVTypesByName.autoVal,
                         onRecompute, value);
             }.bind(this),
 
@@ -229,7 +229,7 @@ class _AutomagicVariable {
                 });
                 break;
             }
-            case _AVTypesByName.autoValue: {
+            case _AVTypesByName.autoVal: {
                 Object.defineProperty(avObj, name, {
                     configurable: true,
                     enumerable: true,
