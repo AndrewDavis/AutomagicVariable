@@ -29,6 +29,8 @@ window.onload = function() {
     } catch (e) {
         printLine(e);
     }
+    printLine(alignInfo('Testing delete: ') + (delete config.var));
+    printLine(alignInfo('Testing delete: ') + (delete config.var));
     printLine();
 
     config.constVar.const(7);

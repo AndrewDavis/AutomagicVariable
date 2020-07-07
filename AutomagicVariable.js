@@ -56,7 +56,7 @@ class _AVConfig {
 
     static _deletePropertyFunction(targetAVConfig, propertyName) {
         if (typeof(targetAVConfig._avMap[propertyName]) === 'undefined') {
-            throw 'Error: Attempting to delete non-existent Automagic Variable ' + propertyName + '!';
+            return false;
         }
         targetAVConfig._avMap[propertyName]._touched();
         delete targetAVConfig._avObj[propertyName];
@@ -65,8 +65,7 @@ class _AVConfig {
     }
 
     get _currentPropertyName() {
-        _AVConfig.TestPropertyName = _AVConfig._PropertyNames.pop()
-        return _AVConfig.TestPropertyName;
+        return _AVConfig._PropertyNames.pop();
     }
 
     _setup() {
