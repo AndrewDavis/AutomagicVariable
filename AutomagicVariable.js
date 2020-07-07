@@ -126,7 +126,7 @@ class _AVConfig {
                 this._avMap[this._currentPropertyName]._subscribeTo(subscribeeAV);
             }.bind(this),
 
-            //Marks all of the AV's subscribers as dirty, recursively.
+            //Marks all of the AV's subscribers as dirty.
             touched: function() {
                 this._avMap[this._currentPropertyName]._touched();
             }.bind(this),
@@ -299,7 +299,6 @@ class _AutomagicVariable {
     _touched() {
         for (let subscriber of this.subscribers) {
             subscriber.isDirty = true;
-            subscriber._touched();
         }
     }
 
