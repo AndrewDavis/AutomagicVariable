@@ -236,73 +236,126 @@ window.onload = function() {
     printLine();
     printLine();
 
-    config.w.val(0);
+    //Print out recompute info for the next section.
+    let recomputePrintout = '';
+    let currentRecomputeLevel = 0;
+    let printPrintout = true;
+    function printAndResetPrintout() {
+        if (printPrintout) {
+            if (recomputePrintout.length > 0) {
+                printLine(recomputePrintout);
+            }
+        }
+        recomputePrintout = '';
+        currentRecomputeLevel = 0;
+    }
+    function addToPrintout(addMe) {
+        recomputePrintout += (currentRecomputeLevel > 0 ? '->' : '') + addMe;
+        ++currentRecomputeLevel;
+    }
+    config.w.auto(function(self, setValue) {
+        addToPrintout('w');
+        self.value = setValue;
+    }, 0);
     config.x.auto(function(self) {
+        addToPrintout('x1');
         self.value = avm.w + 1;
     });
     config.y.auto(function(self) {
+        addToPrintout('y1');
         self.value = avm.x + 1;
     });
     config.z.auto(function(self) {
+        addToPrintout('z1');
         self.value = avm.y + 1;
     });
     otherConfig.z.auto(function(self) {
+        addToPrintout('otherZ1');
         self.value = avm.y + 1;
     });
     otherConfig.combo.autoOnly(function(self) {
+        addToPrintout('combo');
         self.value = (avm.w ? avm.w : 0) + (avm.x ? avm.x : 0) + (avm.y ? avm.y : 0) + (avm.z ? avm.z : 0) +
             (otherAVM.z ? otherAVM.z : 0);
     });
     function getWXYZZCombo() {
         return '  ' + alignLeft('w: ' + avm.w + ', ', 8) + alignLeft('x: ' + avm.x + ', ', 15) +
             alignLeft('y: ' + avm.y + ', ', 15) + alignLeft('z: ' + avm.z + ', ', 15) +
-            alignLeft('other Z: ' + otherAVM.z + ', ', 22) + 'combo sum: ' + otherAVM.combo;
+            alignLeft('other z: ' + otherAVM.z + ', ', 22) + 'combo sum: ' + otherAVM.combo;
     }
-    printLine(alignInfo('Initial w, x, y, z, z, and combo: ') + getWXYZZCombo());
+    printLine('Dependencies are w->x->y->z, y->other z, all->combo sum');
+    printLine(alignInfo('Initial wxyz, other z, and combo sum: ') + getWXYZZCombo());
+    printAndResetPrintout();
     ++avm.w;
     printLine(alignInfo('Incremented w: ') + getWXYZZCombo());
+    printAndResetPrintout();
     delete config.y;
     printLine(alignInfo('Deleted y: ') + getWXYZZCombo());
+    printAndResetPrintout();
     ++avm.w;
     printLine(alignInfo('Incremented w: ') + getWXYZZCombo());
+    printAndResetPrintout();
     delete config.x;
     printLine(alignInfo('Deleted x: ') + getWXYZZCombo());
+    printAndResetPrintout();
     delete config.z;
     printLine(alignInfo('Deleted z: ') + getWXYZZCombo());
+    printAndResetPrintout();
     delete otherConfig.z;
-    printLine(alignInfo('Deleted other Z: ') + getWXYZZCombo());
+    printLine(alignInfo('Deleted other z: ') + getWXYZZCombo());
+    printAndResetPrintout();
     config.x.auto(function(self) {
+        addToPrintout('x2');
         self.value = avm.w + 2;
     });
     printLine(alignInfo('Recreated x (w + 2): ') + getWXYZZCombo());
+    printAndResetPrintout();
     ++avm.w;
     printLine(alignInfo('Incremented w: ') + getWXYZZCombo());
+    printAndResetPrintout();
     config.y.auto(function(self) {
+        addToPrintout('y2');
         self.value = avm.x + 2;
     });
     printLine(alignInfo('Recreated y (x + 2): ') + getWXYZZCombo());
+    printAndResetPrintout();
     ++avm.w;
     printLine(alignInfo('Incremented w: ') + getWXYZZCombo());
+    printAndResetPrintout();
     config.z.auto(function(self) {
+        addToPrintout('z2');
         self.value = avm.y + 2;
     });
     printLine(alignInfo('Recreated z (y + 2): ') + getWXYZZCombo());
+    printAndResetPrintout();
     ++avm.w;
     printLine(alignInfo('Incremented w: ') + getWXYZZCombo());
+    printAndResetPrintout();
     otherConfig.z.auto(function(self) {
+        addToPrintout('otherZ2');
         self.value = avm.y + 2;
     });
-    printLine(alignInfo('Recreated other Z (z + 2): ') + getWXYZZCombo());
+    printLine(alignInfo('Recreated other z (y + 2): ') + getWXYZZCombo());
+    printAndResetPrintout();
     ++avm.w;
     printLine(alignInfo('Incremented w: ') + getWXYZZCombo());
+    printAndResetPrintout();
     delete config.y;
     printLine(alignInfo('Deleted y: ') + getWXYZZCombo());
+    printAndResetPrintout();
     ++avm.w;
     printLine(alignInfo('Incremented w: ') + getWXYZZCombo());
+    printAndResetPrintout();
     config.y.auto(function(self) {
+        addToPrintout('y3');
         self.value = avm.x + 5;
     });
     printLine(alignInfo('Recreated y (x + 5): ') + getWXYZZCombo());
+    printAndResetPrintout();
+    ++avm.w;
+    printLine(alignInfo('Incremented w: ') + getWXYZZCombo());
+    printAndResetPrintout();
+    printLine();
     printLine();
 
     config.deleteMe.val(10);
@@ -321,10 +374,10 @@ window.onload = function() {
 };
 
 globalThis.performanceTesting = function() {
-    let createPerformanceIterations = 1e5;
-    let createPerformanceStr = '1e5';
-    let assignPerformanceIterations = 5e5;
-    let assignPerformanceStr = '5e5';
+    let createPerformanceIterations = 1e4;
+    let createPerformanceStr = '1e4';
+    let assignPerformanceIterations = 2e5;
+    let assignPerformanceStr = '2e5';
     let s;
     let e;
     let obj = {};
