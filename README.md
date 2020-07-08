@@ -73,6 +73,10 @@ Become very familiar with the above example before moving on.
 
 ## How to Use
 
+### The Obvious
+
+Include `AutomagicVariable.js`. You need access to `AVMap`.
+
 ### Setup
 
 First, create a new `AVMap` instance, which all of your `AutomagicVariable`'s will be mapped to/accessed from, and
