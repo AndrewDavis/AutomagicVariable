@@ -96,11 +96,13 @@ avm.b = 200;
 avm.config.c.auto(function(self/*, newValue*/) {
     self.value = avm.b * 2;
 });
-//Same as above, but if manually assigned to, the provided function will not be used; instead, the AV's value will be set directly to whatever is assigned.
+//Same as above, but if manually assigned to, the provided function will not be used;
+//instead, the AV's value will be set directly to whatever is assigned.
 avm.config.d.autoVal(function(self) {
     self.value = avm.b * 2;
 });
-//Same as above, but it cannot be manually assigned to. It only gets its value from the provided function, ignoring any manual assignments.
+//Same as above, but it cannot be manually assigned to. It only gets its value from the provided
+//function, ignoring any manual assignments.
 avm.config.e.autoOnly(function(self) {
     self.value = avm.b * 2;
 });
@@ -112,8 +114,8 @@ avm.d = 300; //avm.d == 300
 //Can't manually assign a value, since this is an autoOnly type; that is disallowed.
 //BAD(!): avm.e = 300; //Throws an error!
 
-//Here, it recomputes avm.c based on its provided function, which yields avm.b * 2 == 100.
-console.log(avm.c); //100
+//Here, it recomputes avm.c based on its provided function, which yields avm.b * 2 == 400.
+console.log(avm.c); //400
 ```
 
 Before getting into the types, it's important to understand the distinction between the **`AVMap`** itself and its
