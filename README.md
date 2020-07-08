@@ -2,7 +2,7 @@
 
 ## Intro
 
-Automagic Variable ("AV") is a JavaScript library which solves the problem of keeping variables which subscribe
+Automagic Variable ("**AV**") is a JavaScript library which solves the problem of keeping variables which subscribe
 to/depend on other variables up-to-date, but only "lazily", on an as-needed basis.
 
 ---
@@ -43,8 +43,25 @@ operate, because *perfectly working code is better than perfectly fast code*.
 In conclusion, the best approach is one which mixes this imperative and declarative functionality into one language, and
 lets you the programmer decide which you would like to use here or there.
 
-Automagic Variable is a lightweight library that provides just such functionality, while also attempting to make it easy
+Automagic Variable is a lightweight JavaScript library that provides just such functionality, while also making it easy
 and intuitive to use and simultaneously prohibiting or discouraging invalid or improper utilization.
+
+---
+
+## Quick Example
+
+Here's how you would actually implement the example above in JavaScript, using Automagic Variable:
+```js
+let avm = new AVMap();
+//Setup x.
+avm.config.x.val(100);
+//Setup halfX.
+avm.config.halfX.auto(function(self) {
+    self.value = avm.x * 0.5;
+});
+//Thanks to AV, halfX will then auto-update as needed.
+avm.x = 200; //avm.halfX == 100
+```
 
 ---
 
@@ -78,8 +95,8 @@ Before getting into the types, it's important to understand the distinction betw
 **`config`**:
 - Use the **`config`** to setup Automagic Variables for the first time, and to access them afterwards for anything other
   than basic get/set operations.
-  - You would also use the **`config`** for `delete` calls, which will also then `delete`
-  the property from the `AVMap` for you, e.g.:
+  - You would also use the **`config`** for `delete` calls, which will then `delete` the property from the `AVMap` for
+    you, e.g.:
     ```js
     //Good:
     delete avm.config.a;
@@ -90,19 +107,6 @@ Before getting into the types, it's important to understand the distinction betw
     ```js
     //Bad(!): delete avm.a;
     ```
-
-Here's how you would implement the example from earlier:
-```js
-let avm = new AVMap();
-//Setup x.
-avm.config.x.val(100);
-//Setup halfX.
-avm.config.halfX.auto(function(self) {
-    self.value = avm.x * 0.5;
-});
-//Thanks to AV, halfX will then auto-update as needed.
-avm.x = 200; //avm.halfX == 100
-```
 
 Note that you can store and utilize the `AVMap`'s `config` separately, if wanted:
 ```js
