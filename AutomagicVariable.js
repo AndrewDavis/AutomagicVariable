@@ -139,7 +139,7 @@ class _AVConfig {
 
             //Creates a value which automagically recomputes based on subscriptions to other AV's, and blocks any set
             //values.
-            autoOnly: function(onRecompute, value) {
+            autoOnly: function(onRecompute) {
                 _AVConfig.CurrentName = this._currentPropertyName;
                 _AVConfig.CurrentGetAV = this._avMap[_AVConfig.CurrentName];
                 if (typeof(_AVConfig.CurrentGetAV) !== 'undefined' && !_AVConfig.CurrentGetAV.isDeleted) {
@@ -168,7 +168,7 @@ class _AVConfig {
                 this._avMap[this._currentPropertyName]._touched();
             }.bind(this),
 
-            //Forces the AV to recompute, if possible. This is the equivalent to setting its value.
+            //Forces the AV to recompute, if possible.
             recompute: function(value) {
                 this._avMap[this._currentPropertyName]._recompute(value);
             }.bind(this),
@@ -193,11 +193,11 @@ _AVConfig._PropertyNames = [];
 //Don't use this class directly.
 class _AutomagicVariable {
     constructor(value, name, type) {
+        this.value = value;
         //if (!_AVOptimize) {
             this._name = name;
             this._type = type;
         //}
-        this.value = value;
     }
 
     static _const(preexistingAV, avObj, name, value) {
@@ -209,10 +209,10 @@ class _AutomagicVariable {
             get: function() {
                 return newAV.value;
             },
-            set: function(newValue) {
+            set: function(setValue) {
                 //If you really want this capability, then use val()...
                 throw 'Error: Attempting to set Automagic Variable const value for "' + name + '"! (old: ' +
-                    newAV.value + ', new: ' + newValue + ')'
+                    newAV.value + ', new: ' + setValue + ')'
             }
         });
         newAV._updateSubscriptions(preexistingAV);
@@ -229,8 +229,8 @@ class _AutomagicVariable {
                 newAV._autoSubscribe();
                 return newAV.value;
             },
-            set: function(newValue) {
-                newAV.value = newValue;
+            set: function(setValue) {
+                newAV.value = setValue;
                 newAV._touched();
             }
         });
@@ -323,7 +323,13 @@ class _AutomagicVariable {
         }
         newAV._updateSubscriptions(preexistingAV);
         //Explicitly call _recompute() at least once, to establish subscribers.
-        newAV._recompute();
+        newAV._recompute(value);
+        //In the case of the autoVal type, if a value is provided, overwrite the value set from _recompute().
+        //_recompute() was necessary to establish its subscribers, but it was provided with an explicit value to set to.
+        if (type == _AVTypesByName.autoVal && typeof(value) !== 'undefined') {
+            newAV.value = value;
+            newAV._touched();
+        }
         return newAV;
     }
 

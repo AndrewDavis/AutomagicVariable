@@ -110,14 +110,14 @@ window.onload = function() {
     printLine(alignInfo('Changed j (auto with ignore): ') + avm.i + ', ' + avm.j + ', ' + avm.k);
     print(alignInfo('Revising j without deleting: '));
     try {
-        config.j.autoVal(function(self, newValue) {
+        config.j.autoVal(function(self, setValue) {
             self.value = avm.i + 1;
         });
     } catch (e) {
         printLine(e);
     }
     delete config.j;
-    config.j.autoVal(function(self, newValue) {
+    config.j.autoVal(function(self, setValue) {
         self.value = avm.i + 1;
     });
     printLine(alignInfo('Deleted and revised j (autoVal): ') + avm.i + ', ' + avm.j + ', ' + avm.k);
@@ -126,7 +126,7 @@ window.onload = function() {
     avm.i = 5;
     printLine(alignInfo('Changed i: ') + avm.i + ', ' + avm.j + ', ' + avm.k);
     delete config.j;
-    config.j.autoOnly(function(self, newValue) {
+    config.j.autoOnly(function(self, setValue) {
         self.value = avm.i + 1;
     });
     printLine(alignInfo('Deleted and revised j (autoOnly): ') + avm.i + ', ' + avm.j + ', ' + avm.k);
@@ -149,20 +149,20 @@ window.onload = function() {
     config.i.val(0);
     printLine(alignInfo('Recreated i: ') + avm.i + ', ' + avm.j + ', ' + avm.k);
     delete config.k;
-    config.k.autoVal(function(self, newValue) {
+    config.k.autoVal(function(self, setValue) {
         self.value = avm.j + 1;
     });
     printLine(alignInfo('Recreated k: ') + avm.i + ', ' + avm.j + ', ' + avm.k);
     delete config.j;
-    config.j.autoVal(function(self, newValue) {
+    config.j.autoVal(function(self, setValue) {
         self.value = avm.i + 1;
     });
     printLine(alignInfo('Recreated j: ') + avm.i + ', ' + avm.j + ', ' + avm.k);
     printLine();
 
-    config.valid.auto(function(self, newValue) {
-        if (newValue != null) {
-            self.value = newValue;
+    config.valid.auto(function(self, setValue) {
+        if (setValue != null) {
+            self.value = setValue;
         }
     });
     printLine(alignInfo('Initial valid (unset): ') + avm.valid);

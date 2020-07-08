@@ -59,11 +59,11 @@ config.x.val(100);
 config.halfX.auto(function(self) {
     //Assign avm.halfX's new value here, using self.value.
     self.value = avm.x * 0.5;
-});
+}); //avm.halfX == 50
 //Thanks to AV, avm.halfX will then auto-update as needed.
 avm.x = 200;
 //avm.halfX updates itself on the first access afterwards.
-//The function above will automagically be called from here.
+//The function above will automagically be called here.
 console.log(avm.halfX); //100
 ```
 
@@ -88,7 +88,7 @@ Alternatively, you can do e.g.:
 let avm = new AVMap()[0];
 let config = avm._config;
 ```
-Then, use the automatically created `_config` property (by default) to access the `AVMap`'s internal configuration
+Then, use the automatigally created `_config` property (by default) to access the `AVMap`'s internal configuration
 instance. This will allow you to setup one of several AV types, by accessing the property names from the `_config`:
 ```js
 //Value types:
@@ -98,34 +98,35 @@ config.a.const(100);
 config.b.val(100);
 
 //Actual usage, once setup (no ._config or config.).
-avm.b = 200;
+avm.b = 200; //avm.b == 200
 //BAD(!): avm.a = 200; //Throws an error!
 
 //Automagic types:
 //Create an AV which automagically recomputes its value inside the provided function.
-config.c.auto(function(self/*, newValue*/) {
+config.c.auto(function(self/*, setValue*/) {
     self.value = avm.b * 2;
-});
+}); //avm.c == avm.b * 2 == 400
 //Same as above, but if manually assigned to, the provided function will not be used;
 //instead, the AV's value will be set directly to whatever is assigned.
 config.d.autoVal(function(self) {
     self.value = avm.b * 2;
-});
+}); //avm.d == avm.b * 2 == 400
 //Same as above, but it cannot be manually assigned to. It only gets its value from the provided
 //function, ignoring any manual assignments.
 config.e.autoOnly(function(self) {
     self.value = avm.b * 2;
-});
+}); //avm.e == avm.b * 2 == 400
 
 //Can manually assign a value, but it's currently being ignored.
-avm.c = 300; //avm.c doesn't change.
+avm.c = 300; //avm.c doesn't change; avm.c == 400
 //Can manually assign a value, and since this is an autoVal type, its value will change.
 avm.d = 300; //avm.d == 300
 //Can't manually assign a value, since this is an autoOnly type; that is disallowed.
 //BAD(!): avm.e = 300; //Throws an error!
 
-//Here, it recomputes avm.c based on its provided function, which yields avm.b * 2 == 400.
-console.log(avm.c); //400
+avm.b = 10; //avm.b == 10
+//Here, it recomputes avm.c based on its provided function; avm.c == avm.b * 2 == 20
+console.log(avm.c); //20
 ```
 
 Before getting into the types, it's important to understand the distinction between the **`AVMap`** itself and its
@@ -136,21 +137,22 @@ Before getting into the types, it's important to understand the distinction betw
 Here is the distinction:
 - Use the **`_config`** to setup Automagic Variables for the first time, and to access them afterwards for anything other
   than basic get/set operations.
-  - You would also use the **`_config`** for `delete` calls, which will then `delete` the property from the `AVMap` for
+  - You'll also use the **`_config`** for `delete` calls, which will then `delete` the property from the `AVMap` for
     you, e.g.:
       ```js
       //Good:
       delete config.a;
       ```
 - Once an AV is setup, use `AVMap` itself to get/set the AV *value*.
-  - Don't call `delete` on `AVMap` properties directly, it won't work like you think! This deletion behavior has been
-    explicitly prohibited via. the use of a `Proxy`, to make sure it doesn't ever happen. So, code like this will error:
+  - **Don't** call `delete` on `AVMap` properties directly, it won't work like you think! This deletion behavior has
+    been explicitly prohibited via. the use of a `Proxy`, to make sure it doesn't ever happen. So, code like this will
+    error:
       ```js
       //Bad(!): delete avm.a;
       ```
 
 Note that the `_config` itself is a JavaScript `Proxy` and is doing some magic behind the scenes; therefore, you cannot
-store the configuration access for any particular property, e.g.:
+store the configuration access for any particular property and expect it to function properly, e.g.:
 ```js
 //BAD(!): let xConfig = config.x;
 ```
@@ -159,70 +161,84 @@ Now that you understand this distinction, let's go over the AV types, and then y
 
 ### The AV Types
 
-Depending on how you create an AV, based on which function you call, you will experience different results:
+Depending on how you create an AV - based on which function you call - you will experience different results:
 - The *value* types (having values which are not to be automagically recomputed themselves):
   - `const()`: its value never changes, and thus it does not participate in the automagic process whatsoever; it acts as
     a regular variable
   - `val()`: its value can change, but only manually; it can however be subscribed to by any of the automagic types
 - The *automagic* types (provide these with an `onRecompute()` `function`):
   - `auto()`: its value is automagically recomputed whenever it is accessed and has previously been marked "dirty" (in
-    need of an update), by one of the Automagic Variables that it subscribes to for updates; if manually assigned a
-    value later, nothing will happen unless your `onRecompute()` `function` explicity utilizes said value
+    need of an update), by one of the Automagic Variables that it subscribes to for updates (when one of those have
+    their value modified); if manually assigned a value later, nothing will happen unless the `onRecompute()` `function`
+    explicity utilizes said value
     - `autoVal()`: same as `auto()`, except if you manually assign a value later, the variable will have that value
-      until it is automagically recomputed
+      assigned to it unless or until it is automagically recomputed
     - `autoOnly()`: same as `auto()`, except you cannot ever manually assign a value to it, and it will error if you try
       to do so
 
-The *value* types are pretty self-explanatory and have already been demonstrated. The *automagic* types require some
-examples. See below the code for more explanation:
-```js
-//Ignoring the newValue parameter.
-config.ignoreManualChanges.auto(function(self/*, newValue*/) {
-    //self.value = ...;
-});
-//This does nothing but invoke a recompute; the 10 is ignored.
-avm.ignoreManualChanges = 10;
+Note that as soon as an *automagic* AV type is created, its `onRecompute()` `function` will immediately be invoked. This
+is done to allow it to establish its subscriptions right away, so it recomputes whenever it needs to.
 
-//Handling newValue is optional. If handled like this, it functions exactly like autoVal().
-config.c.auto(function(self, newValue) {
-    if (typeof(newValue) === 'undefined') {
-        self.value = recompute();
+The first parameter of `const()` and `val()`, if specified, will be the initial value of the AV; if unspecified, the
+value will default to `undefined`. The second parameter of `auto()` and `autoVal()` (but not of `autoOnly()`, since it
+does not allow manual assignment) will be passed to the `onRecompute()` `function`.
+- For `autoVal()`, after the `onRecompute()` `function` is completed, *if the value is not `undefined`*, it will then
+  explicitly have its value changed to the value passed, like with `const()` and `val()`. This may seem redundant, but:
+  - it needed to invoke the `onRecompute()` `function` as mentioned earlier in order to establish its subscriptions.
+  - a value was provided to it, and the mechanics of `autoVal()` are to assign the value as-is without recomputation *if
+    the value is not `undefined`*; therefore, that value is what it will then be assigned to.
+
+The *value* types are pretty self-explanatory and have already been demonstrated. The *automagic* types require some
+examples. See below the following code for more explanation:
+```js
+//Ignoring the setValue parameter.
+config.ignoreManualChanges.auto(function(self/*, setValue*/) {
+    self.value = 5;
+}); //avm.ignoreManualChanges == 5
+//This does nothing but invoke a recompute; the 10 is ignored.
+avm.ignoreManualChanges = 10; //avm.ignoreManualChanges == 5
+
+//Handling setValue is optional. If handled like this, it functions exactly like autoVal().
+config.c.auto(function(self, setValue) {
+    if (typeof(setValue) === 'undefined') {
+        self.value = myRecomputeFunc();
     } else {
-        self.value = newValue;
+        self.value = setValue;
     }
-});
+}); //avm.c == return value of myRecomputeFunc()
 //See above.
 config.d.autoVal(function(self) {
-    self.value = recompute();
-});
+    self.value = myRecomputeFunc();
+}); //avm.d == return value of myRecomputeFunc()
 //These manual changes (set calls), unlike above, will not be ignored.
-avm.c = 10;
-avm.d = 10;
+avm.c = 10; //avm.c == 10
+avm.d = 10; //avm.d == 10
 
-//autoOnly ensures that only the recompute function can change the AV's value.
+//autoOnly ensures that only the myRecomputeFunc function can change the AV's value.
 config.e.autoOnly(function(self) {
-    //self.value = ...;
-});
+    self.value = myRecomputeFunc();
+}); //avm.e == return value of myRecomputeFunc()
 try {
     //Throws an error!
     avm.e = 10;
 } catch (e) {
 
-}
+} //avm.e == return value of myRecomputeFunc()
 ```
-In the `onRecompute()` `function` that gets passed to `auto()`, `autoVal()`, or `autoOnly()`:
+Regarding the `onRecompute()` `function` that gets passed to `auto()`, `autoVal()`, or `autoOnly()`:
 - The first parameter (`self`) is the Automagic Variable itself (`_AutomagicVariable` class instance).
   - You assign the AV's new value to `self.value`, if changing its value is desired; otherwise, it will simply maintain
     its old value (default `undefined`, if never set in the `onRecompute()` `function` or otherwise manually).
     - Note: Changing `self.value` operates inside of the AV instance and **not** via. the automagic setter `function`;
-      therefore, assigning to it will **not** recursively reinvoke the setter `function`.
+      therefore, assigning to it will **not** recursively reinvoke the setter `function`. (No need to worry about
+      recursion here specifically.)
 - The `return` value of this function, if `false` (or equivalent), will ensure that the subscribers of the AV will not
   be marked dirty (in need of an update) from that particular `onRecompute()` call.
   - Otherwise, the `return` value does nothing. Note that *not* `return`ing anything from the function defaults to
     `undefined`, which is **not** equivalent to `false`, and will therefore mark all subscribers as dirty.
 
 In the `onRecompute()` `function` that gets passed to `auto()` (but not `autoVal()` or `autoOnly()`), the second
-parameter (`newValue`) is the value being manually assigned to the AV, whatever it is. You can do or not do (ignore)
+parameter (`setValue`) is the value being manually assigned to the AV, whatever it is. You can do or not do (ignore)
 whatever you like with this parameter, and it is not required.
 
 ### Automagic Subscriptions
@@ -231,13 +247,13 @@ One of the great features about Automagic Variable is that it does not require y
 subscriptions/dependencies. Let's examine this code, for instance:
 ```js
 let [ avm, config ] = new AVMap();
-config.i.val(0);
+config.i.val(0); //avm.i == 0
 config.j.autoOnly(function(self) {
     self.value = avm.i + 1;
-});
+}); //avm.j == avm.i + 1 == 1
 config.k.autoOnly(function(self) {
     self.value = avm.j + 1;
-});
+}); //avm.k == avm.j + 1 == 2
 ```
 Here, the value of `avm.j` will always be `avm.i + 1`, and the value of `avm.k` will always be `avm.j + 1` (and thus
 always `avm.i + 2`). Likewise, even if `avm.i` is modified but `avm.j` is never accessed, when `avm.k` is accessed it
@@ -453,11 +469,11 @@ access `avm.configPropertyName`. This of course only applies to that particular 
 This is one of the prime benefits of using AV: you can have variables which always have the most recently valid value.
 To do this, you would do something like:
 ```js
-config.valid.autoOnly(function(self, newValue) {
-    //Validate that newValue is not null; if it is, don't update its value.
+config.valid.autoOnly(function(self, setValue) {
+    //Validate that setValue is not null; if it is, don't update its value.
     //You could also have it print or throw an error, etc.
-    if (newValue != null) {
-        self.value = newValue;
+    if (setValue != null) {
+        self.value = setValue;
     }
 });
 avm.valid = 7; //avm.valid == 7
