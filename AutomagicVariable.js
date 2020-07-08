@@ -9,34 +9,37 @@ globalThis._AVTypesByName =  { 'deleted': 0, 'const': 1, 'val': 2, 'auto': 3, 'a
 globalThis._AVTypesByValue = { 0: 'deleted', 1: 'const', 2: 'val', 3: 'auto', 4: 'autoVal', 5: 'autoOnly' };
 
 class AVMap {
-    constructor(avConfigPropertyName = 'config') {
+    constructor(configPropertyName = '_config') {
         //if (!_AVOptimize) {
-        //    this._configPropertyName = avConfigPropertyName;
+        //    this._configPropertyName = configPropertyName;
         //}
-        Object.defineProperty(this, avConfigPropertyName, {
+        Object.defineProperty(this, configPropertyName, {
             configurable: false,
             enumerable: true,
-            value: new _AVConfig(this, avConfigPropertyName),
+            value: new _AVConfig(this, configPropertyName),
             writable: false
         });
         //Disallow any attempts to externally delete any AVMap property.
-        return new Proxy(this, {
-            deleteProperty: function(targetAVConfig, propertyName) {
-                throw 'Error: Attempting to delete Automagic Variable ' + propertyName +
-                    '\'s externally facing property!';
-            }
-        });
+        return [
+            new Proxy(this, {
+                deleteProperty: function(targetAVConfig, propertyName) {
+                    throw 'Error: Attempting to delete Automagic Variable ' + propertyName +
+                        '\'s externally facing property!';
+                }
+            }),
+            this[configPropertyName]
+        ];
     }
 }
 
 //Don't use this class directly. This is basically a decorator of AVMap, which will have internal _AutomagicVariable
 //instances and externally-facing getters and setters.
 class _AVConfig {
-    constructor(avObj, avConfigPropertyName) {
+    constructor(avObj, configPropertyName) {
         //The actual AVMap class, with the externally-facing getters and setters for each property.
         this._avObj = avObj;
         //if (!_AVOptimize) {
-        //    this._name = avConfigPropertyName;
+        //    this._name = configPropertyName;
         //}
         //An internal mapping of the AVMap class, with the actual _AutomagicVariable instances for each property.
         this._avObj._avMap = {};
@@ -167,7 +170,7 @@ class _AVConfig {
 
             //Forces the AV to recompute, if possible. This is the equivalent to setting its value.
             recompute: function(value) {
-                this._avObj[this._currentPropertyName] = value;
+                this._avMap[this._currentPropertyName]._recompute(value);
             }.bind(this),
 
             //Returns true if an AV is mapped at the property.
@@ -247,7 +250,6 @@ class _AutomagicVariable {
             writable: false,
             value: onRecompute
         });
-        newAV.isDirty = false;
         switch (type) {
             case _AVTypesByName.auto: {
                 Object.defineProperty(avObj, name, {
@@ -280,7 +282,7 @@ class _AutomagicVariable {
                     set: function(value) {
                         if (typeof(value) === 'undefined') {
                             //Auto.
-                            newAV._recompute(value);
+                            newAV._recompute();
                         } else {
                             //Value.
                             newAV.value = value;
@@ -304,7 +306,7 @@ class _AutomagicVariable {
                     set: function(value) {
                         if (typeof(value) === 'undefined') {
                             //Auto.
-                            newAV._recompute(value);
+                            newAV._recompute();
                         } else {
                             //Auto only.
                             throw 'Error: Attempting to set Automagic Variable auto-only value for "' + name +
@@ -320,8 +322,8 @@ class _AutomagicVariable {
             }
         }
         newAV._updateSubscriptions(preexistingAV);
-        //Invoke the setter to recompute with the given value.
-        avObj[name] = value;
+        //Explicitly call _recompute() at least once, to establish subscribers.
+        newAV._recompute();
         return newAV;
     }
 
@@ -335,12 +337,19 @@ class _AutomagicVariable {
     }
 
     _touched() {
+        //if (_AutomagicVariable._AntiRecursionSet.has(this)) {
+        //    //Recursion.
+        //    return;
+        //}
+        ////No recursion.
+        //_AutomagicVariable._AntiRecursionSet.add(this);
         for (let subscriber of this.subscribers) {
             subscriber.isDirty = true;
             //Has to be recursive, unfortunately, because the in-between variables may not be accessed and would in that
             //case leave their subscribers out-of-date.
             subscriber._touched();
         }
+        //_AutomagicVariable._AntiRecursionSet.delete(this);
     }
 
     _autoSubscribe() {
@@ -402,5 +411,6 @@ class _AutomagicVariable {
 }
 _AutomagicVariable.EmptySet = new Set();
 _AutomagicVariable._RecomputingAVs = [];
+//_AutomagicVariable._AntiRecursionSet = new Set();
 
 //module.exports = { AVMap };

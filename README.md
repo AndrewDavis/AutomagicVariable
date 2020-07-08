@@ -52,17 +52,18 @@ and intuitive to use and simultaneously prohibiting or discouraging invalid or i
 
 Here's how you would actually implement the example above in JavaScript, using Automagic Variable:
 ```js
-let avm = new AVMap();
+let [ avm, config ] = new AVMap();
 //Setup avm.x.
-avm.config.x.val(100);
+config.x.val(100);
 //Setup avm.halfX.
-avm.config.halfX.auto(function(self) {
+config.halfX.auto(function(self) {
     //Assign avm.halfX's new value here, using self.value.
     self.value = avm.x * 0.5;
 });
 //Thanks to AV, avm.halfX will then auto-update as needed.
 avm.x = 200;
-//avm.halfX updates itself on the first access afterwards. The function above will automagically be called from here.
+//avm.halfX updates itself on the first access afterwards.
+//The function above will automagically be called from here.
 console.log(avm.halfX); //100
 ```
 
@@ -74,36 +75,44 @@ Become very familiar with the above example before moving on.
 
 ### Setup
 
-First, create a new `AVMap` instance, which all of your `AutomagicVariable`'s will be mapped to/accessed from:
+First, create a new `AVMap` instance, which all of your `AutomagicVariable`'s will be mapped to/accessed from, and
+retrieve the `AVMap` and its automagically created `_config` instance using [destructuring
+assignment](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Destructuring_assignment):
 ```js
-let avm = new AVMap();
+//AVMap constructor returns an array of the new AVMap instance and it's internal configuration instance.
+let [ avm, config ] = new AVMap();
 ```
-Then, use the `config` property (by default) to access the `AVMap`'s config. This will allow you to setup one of several
-AV types, by accessing the property names from the `config`:
+Alternatively, you can do e.g.:
+```js
+let avm = new AVMap()[0];
+let config = avm._config;
+```
+Then, use the automatically created `_config` property (by default) to access the `AVMap`'s internal configuration
+instance. This will allow you to setup one of several AV types, by accessing the property names from the `_config`:
 ```js
 //Value types:
 //Create a constant AV, which basically has no automagic about it.
-avm.config.a.const(100);
+config.a.const(100);
 //Create an AV which can be manually set, but which does not itself automagically update.
-avm.config.b.val(100);
+config.b.val(100);
 
-//Actual usage, once setup (no .config).
+//Actual usage, once setup (no ._config or config.).
 avm.b = 200;
 //BAD(!): avm.a = 200; //Throws an error!
 
 //Automagic types:
 //Create an AV which automagically recomputes its value inside the provided function.
-avm.config.c.auto(function(self/*, newValue*/) {
+config.c.auto(function(self/*, newValue*/) {
     self.value = avm.b * 2;
 });
 //Same as above, but if manually assigned to, the provided function will not be used;
 //instead, the AV's value will be set directly to whatever is assigned.
-avm.config.d.autoVal(function(self) {
+config.d.autoVal(function(self) {
     self.value = avm.b * 2;
 });
 //Same as above, but it cannot be manually assigned to. It only gets its value from the provided
 //function, ignoring any manual assignments.
-avm.config.e.autoOnly(function(self) {
+config.e.autoOnly(function(self) {
     self.value = avm.b * 2;
 });
 
@@ -119,18 +128,18 @@ console.log(avm.c); //400
 ```
 
 Before getting into the types, it's important to understand the distinction between the **`AVMap`** itself and its
-**`config`**.
+**`_config`**.
 
-### `AVMap` vs. `AVMap.config`
+### `AVMap` vs. `AVMap._config`
 
 Here is the distinction:
-- Use the **`config`** to setup Automagic Variables for the first time, and to access them afterwards for anything other
+- Use the **`_config`** to setup Automagic Variables for the first time, and to access them afterwards for anything other
   than basic get/set operations.
-  - You would also use the **`config`** for `delete` calls, which will then `delete` the property from the `AVMap` for
+  - You would also use the **`_config`** for `delete` calls, which will then `delete` the property from the `AVMap` for
     you, e.g.:
       ```js
       //Good:
-      delete avm.config.a;
+      delete config.a;
       ```
 - Once an AV is setup, use `AVMap` itself to get/set the AV *value*.
   - Don't call `delete` on `AVMap` properties directly, it won't work like you think! This deletion behavior has been
@@ -139,16 +148,10 @@ Here is the distinction:
       //Bad(!): delete avm.a;
       ```
 
-Note that you can store and utilize the `AVMap`'s `config` separately, if wanted:
-```js
-let avmConfig = avm.config;
-avmConfig.y.val(100);
-```
-
-However, the `config` itself is a JavaScript `Proxy` and is doing some magic behind the scenes; therefore, you cannot
+Note that the `_config` itself is a JavaScript `Proxy` and is doing some magic behind the scenes; therefore, you cannot
 store the configuration access for any particular property, e.g.:
 ```js
-//BAD(!): let xConfig = avm.config.x;
+//BAD(!): let xConfig = config.x;
 ```
 
 Now that you understand this distinction, let's go over the AV types, and then you'll see some more examples.
@@ -173,22 +176,22 @@ The *value* types are pretty self-explanatory and have already been demonstrated
 examples. See below the code for more explanation:
 ```js
 //Ignoring the newValue parameter.
-avm.config.ignoreManualChanges.auto(function(self/*, newValue*/) {
+config.ignoreManualChanges.auto(function(self/*, newValue*/) {
     //self.value = ...;
 });
 //This does nothing but invoke a recompute; the 10 is ignored.
 avm.ignoreManualChanges = 10;
 
 //Handling newValue is optional. If handled like this, it functions exactly like autoVal().
-avm.config.c.auto(function(self, newValue) {
+config.c.auto(function(self, newValue) {
     if (typeof(newValue) === 'undefined') {
-        self.value = newValue;
-    } else {
         self.value = recompute();
+    } else {
+        self.value = newValue;
     }
 });
 //See above.
-avm.config.d.autoVal(function(self) {
+config.d.autoVal(function(self) {
     self.value = recompute();
 });
 //These manual changes (set calls), unlike above, will not be ignored.
@@ -196,7 +199,7 @@ avm.c = 10;
 avm.d = 10;
 
 //autoOnly ensures that only the recompute function can change the AV's value.
-avm.config.e.autoOnly(function(self) {
+config.e.autoOnly(function(self) {
     //self.value = ...;
 });
 try {
@@ -226,12 +229,12 @@ whatever you like with this parameter, and it is not required.
 One of the great features about Automagic Variable is that it does not require you to explicitly provide an AV's
 subscriptions/dependencies. Let's examine this code, for instance:
 ```js
-let avm = new AVMap();
-avm.config.i.val(0);
-avm.config.j.autoOnly(function(self) {
+let [ avm, config ] = new AVMap();
+config.i.val(0);
+config.j.autoOnly(function(self) {
     self.value = avm.i + 1;
 });
-avm.config.k.autoOnly(function(self) {
+config.k.autoOnly(function(self) {
     self.value = avm.j + 1;
 });
 ```
@@ -254,8 +257,8 @@ small performance cost in comparison with the functionality and immense maintain
 Since it automagically checks for subscribers every time, this means that it will still function properly even if you
 have e.g. **AV** conditions inside of the `onRecompute()` `function`, like so:
 ```js
-avm.config.condition.val(true);
-avm.config.something.autoOnly(function(self) {
+config.condition.val(true);
+config.something.autoOnly(function(self) {
     //This is safe *because* avm.condition is an AV.
     if (avm.condition) {
         //self.value = ...
@@ -272,7 +275,7 @@ Now, if you were to do something like this, utilizing a
 condition that is **not** an AV, then it may not function properly(!):
 ```js
 let condition = true;
-avm.config.something.autoOnly(function(self) {
+config.something.autoOnly(function(self) {
     //This is UNSAFE because when condition changes, avm.something will not then automagically update!
     if (condition) {
         //self.value = ...
@@ -291,9 +294,9 @@ Here is unfortunately one case where Automagic Variable will require some manual
 or collection access*. This is because these types of variables are often not *set* but rather *accessed* (*get*) and
 *then* performed upon in some fashion. Take the `Set` summation example from earlier:
 ```js
-let avm = new AVMap();
-avm.config.set.val(new Set());
-avm.config.sum.autoOnly(function(self) {
+let [ avm, config ] = new AVMap();
+config.set.val(new Set());
+config.sum.autoOnly(function(self) {
     let sum = 0.0;
     let set = avm.set;
     for (let item of set) {
@@ -308,11 +311,11 @@ avm.set.add(7);
 //avm.sum will be out-of-date!
 console.log(avm.sum);
 ```
-You'll have to make sure that whenever the object or collection is *modified*, to then access it via. the `AVMap.config`
+You'll have to make sure that whenever the object or collection is *modified*, to then access it via. the `_config`
 and call `touched()` on it, like so:
 ```js
 //Mark the avm.set's subscribers as dirty.
-avm.config.set.touched();
+config.set.touched();
 //avm.sum will now be up-to-date.
 console.log(avm.sum);
 ```
@@ -328,11 +331,11 @@ This could be done; however, it would probably reduce the performance too much f
 
 When you use `delete`, make sure to use it on the **AV** itself and **not** on the `AVMap`:
 ```js
-let avm = new AVMap();
-avm.config.property.const(true);
+let [ avm, config ] = new AVMap();
+config.property.const(true);
 //BAD(!): delete avm.property;
 //Good:
-delete avm.config.property;
+delete config.property;
 ```
 This will automagically take care of the deletion of the property from the `AVMap` (`avm.property`) as well.
 
@@ -347,20 +350,20 @@ maintain and update the subscriptions and subscribees as it should **but also** 
 subscriptions and subscribees unless and until recreated. It's the most ideal setup that one could hope for. This means
 that you can have code like:
 ```js
-avm.config.i.val(0);
-avm.config.j.auto(function(self) {
+config.i.val(0);
+config.j.auto(function(self) {
     self.value = avm.i + 1;
 });
-avm.config.k.auto(function(self) {
+config.k.auto(function(self) {
     self.value = avm.j + 1;
 });
 //Delete and then recreate avm.j.
-delete avm.config.j;
-avm.config.j.autoOnly(function(self) {
+delete config.j;
+config.j.autoOnly(function(self) {
     self.value = avm.i + 2;
 });
 //Delete avm.k, which is no longer wanted.
-delete avm.config.k;
+delete config.k;
 ```
 Note that you can also change the type of an AV this way, if wanted.
 
@@ -382,9 +385,9 @@ If using AV but in performance-critical code, you can always (and most probably 
 store the latest value and refrain from interacting with AV until the performance-critical code is complete. Here's an
 example:
 ```js
-let avm = new AVMap();
-avm.config.set.val(new Set([ 5, 6, 7, 8 ]));
-avm.config.sum.auto(function(self) {
+let [ avm, config ] = new AVMap();
+config.set.val(new Set([ 5, 6, 7, 8 ]));
+config.sum.auto(function(self) {
     //Use a temporary variable here for better performance.
     let sum = 0.0;
     let set = avm.set;
@@ -406,28 +409,28 @@ To detect if an object is an AVMap, check if `typeof(avm._avMap) !== 'undefined'
 
 ### Config
 
-You can see all of the config `function`s and properties (with comments) by examing the `_AVConfig` class's `_setup`
+You can see all of the `_config` `function`s and properties (with comments) by examing the `_AVConfig` class's `_setup`
 `function`. They are:
 - `const()`, `val()`, `auto()`, `autoVal()`, and `autoOnly()`, which have already been demonstrated and documented
   above.
 - `get()`: Returns the AV (`_AutomagicVariable` instance) mapped at the property, if any. Pass this to `subscribeTo()`.
-  - Example: `avm.config.property.get()`
+  - Example: `config.property.get()`
     - From here, you can access `.value`, `.isDirty`, and, if they exist, `.onRecompute`, `.subscribers`,
       `.subscribees`, `.isDeleted`, `._name`, and `._type`.
 - `subscribeTo(subscribeeAV)`: Manually subscribes the AV to an existing subscribee AV instance. Pass `get()` here.
   Note: This is generally unnecessary!
-  - Example: `avm.config.subscriber.subscribeTo(avm.config.subscribeeAV.get())`
+  - Example: `config.subscriber.subscribeTo(config.subscribeeAV.get())`
     - Whenever `avm.subscribeeAV` changes, `avm.subscriber` will then be marked as dirty (in need of an update upon
       next access).
 - `touched()`: Manually marks all of the AV's subscribers as dirty, recursively.
-  - Example: `avm.config.property.touched()`
+  - Example: `config.property.touched()`
 - `recompute(value)`: Forces the AV to recompute, if possible. This is the equivalent to setting its value.
-  - Example: `avm.config.property.recompute(value) == (avm.property = value);`
+  - Example: `config.property.recompute(value) == (avm.property = value);`
 - `exists()`: Returns true if an AV is mapped at the property.
-  - Example: `avm.config.doIExist.exists() == true/false`
+  - Example: `config.doIExist.exists() == true/false`
 - `last`: Gets the AV's last value, **without** updating it (no `onRecompute()` will be invoked).
   - Example:
-  `avm.config.property.last == avm.config.property.get().value == self.value (inside of the onRecompute() function)`
+  `config.property.last == config.property.get().value == self.value (inside of the onRecompute() function)`
 
 ---
 
@@ -439,10 +442,20 @@ Don't use the `_AVConfig` or `_AutomagicVariable` classes directly, nor any of t
 properties. These are meant to be internal-only. If you do touch any of this (highly unlikely, except perhaps when
 debugging), make sure you know exactly what you're doing!
 
-You only need to use `new AVMap()` and access its `config` and `config.` properties via. e.g. `avm.config`. If you want
-to change that `config` property name, you can do so by specifying a different one in the `AVMap()` constructor, e.g.:
-`new AVMap('configPropertyName')` and then `avm.configPropertyName`. This of course only applies to that particular
-`AVMap` instance.
+You only need to use `new AVMap()` and access its `_config.` properties. The default `_config` property (`[1]` of what's
+returned) on the AVMap itself (`[0]` of what's returned) is `_config`; if you want to change that, you can do so by
+specifying a different property name in the `AVMap()` constructor, e.g.: `new AVMap('configPropertyName')` and then
+access `avm.configPropertyName`. This of course only applies to that particular `AVMap` instance.
+
+### References
+
+If you wish to have one AV reference another, the best you're going to be able to do is:
+```js
+config.a.val(0);
+config.c.autoOnly(function(self) { self.value = avm.a; });
+```
+But with this, you won't be able to change `avm.c` and have it change the value of `avm.a`. If you try to do that,
+you'll run into a recursive situation.
 
 ### Recursion
 
@@ -455,24 +468,24 @@ The first and most obvious way to induce recursion is by self-referencing a vari
 `function`, like so:
 ```js
 //Throws recursion error.
-avm.config.recursion.autoOnly(function(self) {
+config.recursion.autoOnly(function(self) {
     self.value = avm.recursion + 1;
 });
 ```
 If you have code like the above, you may have just wanted to do something like:
 ```js
 //Does not throw recursion error.
-avm.config.recursion.autoOnly(function(self) {
+config.recursion.autoOnly(function(self) {
     ++self.value;
 });
 ```
 
 The second way to induce recursion is by having a cyclic AV recomputation of some sort, e.g.:
 ```js
-avm.config.recursion1.auto(function(self) {
+config.recursion1.auto(function(self) {
     self.value = avm.recursion2;
 });
-avm.config.recursion2.auto(function(self) {
+config.recursion2.auto(function(self) {
     self.value = avm.recursion1;
 });
 //Throws recursion error.
@@ -484,8 +497,8 @@ throw this error, then you're good to go.
 
 ### Optimization vs. Debugging
 
-The original code would store the `config` property name in the `AVMap` and `config` (`_AVConfig`) instances, as well as
-a `_name` and `_type` property in the AV (`_AutomagicVariable`) instances. This was then optimized away with an
+The original code would store the `_config` property name in the `AVMap` and `_config` (`_AVConfig`) instances, as well
+as a `_name` and `_type` property in the AV (`_AutomagicVariable`) instances. This was then optimized away with an
 `_AVOptimize` boolean, which was then optimized away even further by commenting out all of that code... These would be
 great to have back in the code for AV-specific debugging purposes, however!
 

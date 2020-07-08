@@ -16,23 +16,23 @@ window.onload = function() {
         return alignRight(alignMe, 35);
     };
 
-    globalThis.avm = new AVMap();
+    [ globalThis.avm, globalThis.config ] = new AVMap();
     printLine(alignInfo('Detect AVMap: ') + (typeof(avm._avMap) !== 'undefined' ? 'is AVMap' : 'is AVMap'));
     //printLine(alignInfo('Get avm property name: ') + avm._configPropertyName);
-    avm.config.var.val(10);
-    printLine(alignInfo('Detect AV: ') + (avm.config.var.exists() ? 'is AV' : 'not AV'));
-    //printLine(alignInfo('Get AV property name: ') + avm.config.var.get()._name);
+    config.var.val(10);
+    printLine(alignInfo('Detect AV: ') + (config.var.exists() ? 'is AV' : 'not AV'));
+    //printLine(alignInfo('Get AV property name: ') + config.var.get()._name);
     print(alignInfo('Testing reserved: '));
     try {
-        avm.config.config.val(0);
+        config._config.val(0);
     } catch (e) {
         printLine(e);
     }
-    printLine(alignInfo('Testing delete: ') + (delete avm.config.var));
-    printLine(alignInfo('Testing delete: ') + (delete avm.config.var));
+    printLine(alignInfo('Testing delete: ') + (delete config.var));
+    printLine(alignInfo('Testing delete: ') + (delete config.var));
     printLine();
 
-    avm.config.constVar.const(7);
+    config.constVar.const(7);
     print(alignInfo('Changing constVar: '));
     try {
         avm.constVar = 10;
@@ -40,19 +40,19 @@ window.onload = function() {
         printLine(e);
     }
     printLine(alignInfo('constVar: ') + avm.constVar);
-    avm.config.a.val(avm.constVar);
-    avm.config.b.auto(function(self) {
+    config.a.val(avm.constVar);
+    config.b.auto(function(self) {
         self.value = avm.a + 2;
     });
     printLine(alignInfo('Initial a, b: ') + avm.a + ', ' + avm.b);
     avm.a = 8;
     printLine(alignInfo('Changed a to 8: ') + avm.a + ', ' + avm.b);
-    avm.config.c.auto(function(self) { self.value = avm.a; });
+    config.c.autoOnly(function(self) { self.value = avm.a; });
     printLine(alignInfo('Referenced a by c: ') + avm.c);
     printLine();
 
-    avm.config.arr.val([]);
-    avm.config.last.auto(function(self) {
+    config.arr.val([]);
+    config.last.auto(function(self) {
         if (avm.arr.length == 0) {
             self.value = null;
         } else {
@@ -62,18 +62,18 @@ window.onload = function() {
     printLine(alignInfo('Initial array + last element: ') + alignRight('arr: ' + JSON.stringify(avm.arr) + ', ', 16) + 'last: ' + JSON.stringify(avm.last));
     avm.arr.push(5, 6, 7, 8);
     printLine(alignInfo('Pushed onto array: ') + alignRight('arr: ' + JSON.stringify(avm.arr) + ', ', 16) + 'last: ' + JSON.stringify(avm.last));
-    avm.config.arr.touched();
+    config.arr.touched();
     printLine(alignInfo('Marked array dirty: ') + alignRight('arr: ' + JSON.stringify(avm.arr) + ', ', 16) + 'last: ' + JSON.stringify(avm.last));
     avm.arr = [];
     printLine(alignInfo('Cleared array: ') + alignRight('arr: ' + JSON.stringify(avm.arr) + ', ', 16) + 'last: ' + JSON.stringify(avm.last));
     avm.arr.push(5, 6);
     printLine(alignInfo('Pushed onto array: ') + alignRight('arr: ' + JSON.stringify(avm.arr) + ', ', 16) + 'last: ' + JSON.stringify(avm.last));
-    avm.config.last.recompute();
+    config.last.recompute();
     printLine(alignInfo('Recomputed last: ') + alignRight('arr: ' + JSON.stringify(avm.arr) + ', ', 16) + 'last: ' + JSON.stringify(avm.last));
     printLine();
 
-    avm.config.set.val(new Set());
-    avm.config.sum.auto(function(self) {
+    config.set.val(new Set());
+    config.sum.auto(function(self) {
         let sum = 0.0;
         let set = avm.set;
         for (let item of set) {
@@ -86,11 +86,11 @@ window.onload = function() {
     avm.set.add(6);
     avm.set.add(7);
     printLine(alignInfo('Added to set: ') + JSON.stringify(Array.from(avm.set)) + ', ' + avm.sum);
-    avm.config.set.touched();
+    config.set.touched();
     printLine(alignInfo('Marked set dirty: ') + JSON.stringify(Array.from(avm.set)) + ', ' + avm.sum);
     printLine();
 
-    avm.config.map.val(new Map());
+    config.map.val(new Map());
     printLine(alignInfo('Initial map: ') + JSON.stringify(Array.from(avm.map)));
     avm.map.set(5, '!');
     avm.map.set(6, '!');
@@ -98,11 +98,11 @@ window.onload = function() {
     printLine(alignInfo('Added to map: ') + JSON.stringify(Array.from(avm.map)));
     printLine();
 
-    avm.config.i.val(0);
-    avm.config.j.auto(function(self) {
+    config.i.val(0);
+    config.j.auto(function(self) {
         self.value = avm.i + 1;
     });
-    avm.config.k.auto(function(self) {
+    config.k.auto(function(self) {
         self.value = avm.j + 1;
     });
     printLine(alignInfo('Initial i, j, k: ') + avm.i + ', ' + avm.j + ', ' + avm.k);
@@ -110,14 +110,14 @@ window.onload = function() {
     printLine(alignInfo('Changed j (auto with ignore): ') + avm.i + ', ' + avm.j + ', ' + avm.k);
     print(alignInfo('Revising j without deleting: '));
     try {
-        avm.config.j.autoVal(function(self, newValue) {
+        config.j.autoVal(function(self, newValue) {
             self.value = avm.i + 1;
         });
     } catch (e) {
         printLine(e);
     }
-    delete avm.config.j;
-    avm.config.j.autoVal(function(self, newValue) {
+    delete config.j;
+    config.j.autoVal(function(self, newValue) {
         self.value = avm.i + 1;
     });
     printLine(alignInfo('Deleted and revised j (autoVal): ') + avm.i + ', ' + avm.j + ', ' + avm.k);
@@ -125,8 +125,8 @@ window.onload = function() {
     printLine(alignInfo('Changed j: ') + avm.i + ', ' + avm.j + ', ' + avm.k);
     avm.i = 5;
     printLine(alignInfo('Changed i: ') + avm.i + ', ' + avm.j + ', ' + avm.k);
-    delete avm.config.j;
-    avm.config.j.autoOnly(function(self, newValue) {
+    delete config.j;
+    config.j.autoOnly(function(self, newValue) {
         self.value = avm.i + 1;
     });
     printLine(alignInfo('Deleted and revised j (autoOnly): ') + avm.i + ', ' + avm.j + ', ' + avm.k);
@@ -138,29 +138,29 @@ window.onload = function() {
     }
     avm.i = 100;
     printLine(alignInfo('Changed i: ') + avm.i + ', ' + avm.j + ', ' + avm.k);
-    delete avm.config.k;
+    delete config.k;
     printLine(alignInfo('Deleted k: ') + avm.i + ', ' + avm.j + ', ' + avm.k);
-    delete avm.config.k;
+    delete config.k;
     printLine(alignInfo('Deleted k again: ') + avm.i + ', ' + avm.j + ', ' + avm.k);
     avm.i = 0;
     printLine(alignInfo('Changed i: ') + avm.i + ', ' + avm.j + ', ' + avm.k);
-    delete avm.config.i;
+    delete config.i;
     printLine(alignInfo('Deleted i: ') + avm.i + ', ' + avm.j + ', ' + avm.k);
-    avm.config.i.val(0);
+    config.i.val(0);
     printLine(alignInfo('Recreated i: ') + avm.i + ', ' + avm.j + ', ' + avm.k);
-    delete avm.config.k;
-    avm.config.k.autoVal(function(self, newValue) {
+    delete config.k;
+    config.k.autoVal(function(self, newValue) {
         self.value = avm.j + 1;
     });
     printLine(alignInfo('Recreated k: ') + avm.i + ', ' + avm.j + ', ' + avm.k);
-    delete avm.config.j;
-    avm.config.j.autoVal(function(self, newValue) {
+    delete config.j;
+    config.j.autoVal(function(self, newValue) {
         self.value = avm.i + 1;
     });
     printLine(alignInfo('Recreated j: ') + avm.i + ', ' + avm.j + ', ' + avm.k);
     printLine();
 
-    avm.config.valid.auto(function(self, newValue) {
+    config.valid.auto(function(self, newValue) {
         if (newValue != null) {
             self.value = newValue;
         }
@@ -172,9 +172,9 @@ window.onload = function() {
     printLine(alignInfo('Set valid to null: ') + avm.valid);
     printLine();
 
-    globalThis.otherAVM = new AVMap();
-    avm.config.first.val(10);
-    otherAVM.config.second.auto(function(self) {
+    [ globalThis.otherAVM, otherConfig ] = new AVMap();
+    config.first.val(10);
+    otherConfig.second.auto(function(self) {
         self.value = avm.first + 1;
     });
     printLine(alignInfo('Testing 2 AVM\'s: ') + avm.first + ', ' + otherAVM.second);
@@ -184,17 +184,17 @@ window.onload = function() {
     //try {
     //    print(alignInfo('Invoking recursion: '));
     //    //Throws recursion error.
-    //    avm.config.recursion.autoOnly(function(self) {
+    //    config.recursion.autoOnly(function(self) {
     //        self.value = avm.recursion + 1;
     //    });
     //} catch (e) {
     //    printLine(e);
     //}
     //try {
-    //    avm.config.recursion1.auto(function(self) {
+    //    config.recursion1.auto(function(self) {
     //        self.value = avm.recursion2;
     //    });
-    //    avm.config.recursion2.auto(function(self) {
+    //    config.recursion2.auto(function(self) {
     //        self.value = avm.recursion1;
     //    });
     //    print(alignInfo('Invoking dual recursion: '));
@@ -208,10 +208,10 @@ window.onload = function() {
     c = new (class {
         constructor() {
             this.property = 'class property';
-            avm.config.classFuncUnbound = function() {
+            config.classFuncUnbound = function() {
                 return this.property;
             }
-            avm.config.classFuncBound = function() {
+            config.classFuncBound = function() {
                 return this.property;
             }.bind(this);
         }
@@ -222,9 +222,9 @@ window.onload = function() {
     printLine(alignInfo('Got first then called: ') + classFuncBound());
     printLine();
 
-    avm.config.nestedAVM.val(new AVMap());
-    avm.nestedAVM.config.a = 10;
-    avm.nestedAVM.config.b.auto(function(self) {
+    config.nestedAVM.val(new AVMap()[0]);
+    avm.nestedAVM._config.a = 10;
+    avm.nestedAVM._config.b.auto(function(self) {
         self.value = avm.nestedAVM.a * 2;
     });
     printLine(alignInfo('Nested AVM initial a, b: ') + avm.nestedAVM.a + ', ' + avm.nestedAVM.b);
@@ -235,20 +235,20 @@ window.onload = function() {
     printLine();
     printLine();
 
-    avm.config.w.val(0);
-    avm.config.x.auto(function(self) {
+    config.w.val(0);
+    config.x.auto(function(self) {
         self.value = avm.w + 1;
     });
-    avm.config.y.auto(function(self) {
+    config.y.auto(function(self) {
         self.value = avm.x + 1;
     });
-    avm.config.z.auto(function(self) {
+    config.z.auto(function(self) {
         self.value = avm.y + 1;
     });
-    otherAVM.config.z.auto(function(self) {
+    otherConfig.z.auto(function(self) {
         self.value = avm.y + 1;
     });
-    otherAVM.config.combo.autoOnly(function(self) {
+    otherConfig.combo.autoOnly(function(self) {
         self.value = (avm.w ? avm.w : 0) + (avm.x ? avm.x : 0) + (avm.y ? avm.y : 0) + (avm.z ? avm.z : 0) +
             (otherAVM.z ? otherAVM.z : 0);
     });
@@ -260,51 +260,51 @@ window.onload = function() {
     printLine(alignInfo('Initial w, x, y, z, z, and combo: ') + getWXYZZCombo());
     ++avm.w;
     printLine(alignInfo('Incremented w: ') + getWXYZZCombo());
-    delete avm.config.y;
+    delete config.y;
     printLine(alignInfo('Deleted y: ') + getWXYZZCombo());
     ++avm.w;
     printLine(alignInfo('Incremented w: ') + getWXYZZCombo());
-    delete avm.config.x;
+    delete config.x;
     printLine(alignInfo('Deleted x: ') + getWXYZZCombo());
-    delete avm.config.z;
+    delete config.z;
     printLine(alignInfo('Deleted z: ') + getWXYZZCombo());
-    delete otherAVM.config.z;
+    delete otherConfig.z;
     printLine(alignInfo('Deleted other Z: ') + getWXYZZCombo());
-    avm.config.x.auto(function(self) {
+    config.x.auto(function(self) {
         self.value = avm.w + 2;
     });
     printLine(alignInfo('Recreated x (w + 2): ') + getWXYZZCombo());
     ++avm.w;
     printLine(alignInfo('Incremented w: ') + getWXYZZCombo());
-    avm.config.y.auto(function(self) {
+    config.y.auto(function(self) {
         self.value = avm.x + 2;
     });
     printLine(alignInfo('Recreated y (x + 2): ') + getWXYZZCombo());
     ++avm.w;
     printLine(alignInfo('Incremented w: ') + getWXYZZCombo());
-    avm.config.z.auto(function(self) {
+    config.z.auto(function(self) {
         self.value = avm.y + 2;
     });
     printLine(alignInfo('Recreated z (y + 2): ') + getWXYZZCombo());
     ++avm.w;
     printLine(alignInfo('Incremented w: ') + getWXYZZCombo());
-    otherAVM.config.z.auto(function(self) {
+    otherConfig.z.auto(function(self) {
         self.value = avm.y + 2;
     });
     printLine(alignInfo('Recreated other Z (z + 2): ') + getWXYZZCombo());
     ++avm.w;
     printLine(alignInfo('Incremented w: ') + getWXYZZCombo());
-    delete avm.config.y;
+    delete config.y;
     printLine(alignInfo('Deleted y: ') + getWXYZZCombo());
     ++avm.w;
     printLine(alignInfo('Incremented w: ') + getWXYZZCombo());
-    avm.config.y.auto(function(self) {
+    config.y.auto(function(self) {
         self.value = avm.x + 5;
     });
     printLine(alignInfo('Recreated y (x + 5): ') + getWXYZZCombo());
     printLine();
 
-    avm.config.deleteMe.val(10);
+    config.deleteMe.val(10);
     print(alignInfo('Deleting deleteMe improperly: '));
     try {
         delete avm.deleteMe;
@@ -315,7 +315,7 @@ window.onload = function() {
 
     printLine();
     printLine('Performance testing (please wait):');
-    window.scrollTo(0, document.body.scrollHeight);
+    //window.scrollTo(0, document.body.scrollHeight);
     setTimeout(performanceTesting, 0);
 };
 
@@ -327,7 +327,7 @@ globalThis.performanceTesting = function() {
     let s;
     let e;
     let obj = {};
-    let perfAVM = new AVMap();
+    let [ perfAVM, perfConfig ] = new AVMap();
     let q = {};
     function fakeNotify(n, objN) {
         q[n] = objN;
@@ -342,7 +342,7 @@ globalThis.performanceTesting = function() {
     printLine(alignInfo(createPerformanceStr + ' objects create: ') + (e - s) + 'ms');
     s = performance.now();
     for (let n = 0; n < createPerformanceIterations; ++n) {
-        perfAVM = new AVMap();
+        [ perfAVM, perfConfig ] = new AVMap();
     }
     e = performance.now();
     printLine(alignInfo(createPerformanceStr + ' AVMaps create: ') + (e - s) + 'ms');
@@ -356,7 +356,7 @@ globalThis.performanceTesting = function() {
     printLine(alignInfo(assignPerformanceStr + ' objects assign new: ') + (e - s) + 'ms');
     s = performance.now();
     for (let n = 0; n < assignPerformanceIterations; ++n) {
-        perfAVM.config[n] = n;
+        perfConfig[n] = n;
     }
     e = performance.now();
     printLine(alignInfo(assignPerformanceStr + ' AVMaps assign new: ') + (e - s) + 'ms');
@@ -427,7 +427,7 @@ globalThis.performanceTesting = function() {
     printLine(alignInfo(assignPerformanceStr + ' objects delete: ') + (e - s) + 'ms');
     s = performance.now();
     for (let n = 0; n < assignPerformanceIterations; ++n) {
-        delete perfAVM.config[n];
+        delete perfConfig[n];
     }
     e = performance.now();
     printLine(alignInfo(assignPerformanceStr + ' AVMaps delete: ') + (e - s) + 'ms');
@@ -443,7 +443,7 @@ globalThis.performanceTesting = function() {
     printLine(alignInfo(assignPerformanceStr + ' objects assign new: ') + (e - s) + 'ms');
     s = performance.now();
     for (let n = 0; n < assignPerformanceIterations; ++n) {
-        perfAVM.config[n].const(n);
+        perfConfig[n].const(n);
     }
     e = performance.now();
     printLine(alignInfo(assignPerformanceStr + ' AVMaps assign new const: ') + (e - s) + 'ms');
