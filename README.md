@@ -53,15 +53,20 @@ and intuitive to use and simultaneously prohibiting or discouraging invalid or i
 Here's how you would actually implement the example above in JavaScript, using Automagic Variable:
 ```js
 let avm = new AVMap();
-//Setup x.
+//Setup avm.x.
 avm.config.x.val(100);
-//Setup halfX.
+//Setup avm.halfX.
 avm.config.halfX.auto(function(self) {
+    //Assign avm.halfX's new value here, using self.value.
     self.value = avm.x * 0.5;
 });
-//Thanks to AV, halfX will then auto-update as needed.
-avm.x = 200; //avm.halfX == 100
+//Thanks to AV, avm.halfX will then auto-update as needed.
+avm.x = 200;
+//avm.halfX updates itself on the first access afterwards. The function above will automagically be called from here.
+console.log(avm.halfX); //100
 ```
+
+Become very familiar with the above example before moving on.
 
 ---
 
@@ -87,26 +92,31 @@ avm.config.d.autoVal(function(self) {
 avm.config.e.autoOnly(function(self) {
     //self.value = ...;
 });
+
+//Actual usage, once setup (no .config).
+avm.b = 200;
 ```
+
+Before getting into the types, it's important to understand the distinction between the **`AVMap`** itself and its
+**`config`**.
 
 ### `AVMap` vs. `AVMap.config`
 
-Before getting into the types, it's important to understand the distinction between the **`AVMap`** itself and its
-**`config`**:
+Here is the distinction:
 - Use the **`config`** to setup Automagic Variables for the first time, and to access them afterwards for anything other
   than basic get/set operations.
   - You would also use the **`config`** for `delete` calls, which will then `delete` the property from the `AVMap` for
     you, e.g.:
-    ```js
-    //Good:
-    delete avm.config.a;
-    ```
+      ```js
+      //Good:
+      delete avm.config.a;
+      ```
 - Once an AV is setup, use `AVMap` itself to get/set the AV *value*.
   - Don't call `delete` on `AVMap` properties directly, it won't work like you think! This deletion behavior has been
     explicitly prohibited via. the use of a `Proxy`, to make sure it doesn't ever happen. So, code like this will error:
-    ```js
-    //Bad(!): delete avm.a;
-    ```
+      ```js
+      //Bad(!): delete avm.a;
+      ```
 
 Note that you can store and utilize the `AVMap`'s `config` separately, if wanted:
 ```js
@@ -120,25 +130,26 @@ store the configuration access for any particular property, e.g.:
 //BAD(!): let xConfig = avm.config.x;
 ```
 
-Now that you understand this distinction, let's go over the AV types.
+Now that you understand this distinction, let's go over the AV types, and then you'll see some more examples.
 
 ### The AV Types
 
-Depending on how you create an AV, with which function you call, you will experience different results:
-- The *value* types (these are only for values which are not to be automagically recomputed):
-  - const(): its value never changes, and thus it does not participate in the automagic process whatsoever; it acts just like a regular variable; it would be easy to change this, however, to another type
-  - val(): its value can change, but only manually; it can be subscribed to by any of the automagix types
-- The *automagic* types (these are provided with a recompute `function`):
-  - auto(): its value is automagically recomputed (using the provided recompute `function`) whenever it is accessed and
-    has been marked dirty (by one of the Automagic Variables that it subscribes to for updates); if manually assigned a
-    value later, nothing will happen unless your recompute `function` explicity utilizes said value
-    - autoVal(): same as auto(), except if you manually assign a value later, the variable will have that value until it
-      is automagically recomputed
-    - autoOnly(): same as auto(), except you cannot ever manually assign a value to it, and it will error if you try to
-      do so
+Depending on how you create an AV, based on which function you call, you will experience different results:
+- The *value* types (having values which are not to be automagically recomputed themselves):
+  - `const()`: its value never changes, and thus it does not participate in the automagic process whatsoever; it acts as
+    a regular variable
+  - `val()`: its value can change, but only manually; it can however be subscribed to by any of the automagic types
+- The *automagic* types (provide these with an `onRecompute()` `function`):
+  - `auto()`: its value is automagically recomputed whenever it is accessed and has previously been marked "dirty" (in
+    need of an update), by one of the Automagic Variables that it subscribes to for updates; if manually assigned a
+    value later, nothing will happen unless your `onRecompute()` `function` explicity utilizes said value
+    - `autoVal()`: same as `auto()`, except if you manually assign a value later, the variable will have that value
+      until it is automagically recomputed
+    - `autoOnly()`: same as `auto()`, except you cannot ever manually assign a value to it, and it will error if you try
+      to do so
 
 The *value* types are pretty self-explanatory and have already been demonstrated. The *automagic* types require some
-examples:
+examples. See below the code for more explanation:
 ```js
 //Ignoring the newValue parameter.
 avm.config.ignoreManualChanges.auto(function(self/*, newValue*/) {
@@ -157,9 +168,9 @@ avm.config.c.auto(function(self, newValue) {
 });
 //See above.
 avm.config.d.autoVal(function(self) {
-    //self.value = ...;
+    self.value = recompute();
 });
-//These will not be ignored.
+//These manual changes (set calls), unlike above, will not be ignored.
 avm.c = 10;
 avm.d = 10;
 
