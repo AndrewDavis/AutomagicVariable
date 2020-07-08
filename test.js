@@ -172,7 +172,8 @@ window.onload = function() {
     printLine(alignInfo('Set valid to null: ') + avm.valid);
     printLine();
 
-    [ globalThis.otherAVM, otherConfig ] = new AVMap();
+    globalThis.otherAVM = new AVMap('testConfigProperty')[0];
+    globalThis.otherConfig = otherAVM.testConfigProperty;
     config.first.val(10);
     otherConfig.second.auto(function(self) {
         self.value = avm.first + 1;

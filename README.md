@@ -79,7 +79,8 @@ First, create a new `AVMap` instance, which all of your `AutomagicVariable`'s wi
 retrieve the `AVMap` and its automagically created `_config` instance using [destructuring
 assignment](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Destructuring_assignment):
 ```js
-//AVMap constructor returns an array of the new AVMap instance and it's internal configuration instance.
+//AVMap constructor returns an array of the new AVMap instance and its internal
+//configuration instance.
 let [ avm, config ] = new AVMap();
 ```
 Alternatively, you can do e.g.:
@@ -446,6 +447,22 @@ You only need to use `new AVMap()` and access its `_config.` properties. The def
 returned) on the AVMap itself (`[0]` of what's returned) is `_config`; if you want to change that, you can do so by
 specifying a different property name in the `AVMap()` constructor, e.g.: `new AVMap('configPropertyName')` and then
 access `avm.configPropertyName`. This of course only applies to that particular `AVMap` instance.
+
+### Ensuring Values are Always Valid
+
+This is one of the prime benefits of using AV: you can have variables which always have the most recently valid value.
+To do this, you would do something like:
+```js
+config.valid.autoOnly(function(self, newValue) {
+    //Validate that newValue is not null; if it is, don't update its value.
+    //You could also have it print or throw an error, etc.
+    if (newValue != null) {
+        self.value = newValue;
+    }
+});
+avm.valid = 7; //avm.valid == 7
+avm.valid = null; //avm.valid == 7
+```
 
 ### References
 
