@@ -89,7 +89,10 @@ and intuitive to use and simultaneously prohibiting or discouraging invalid or i
 
 Here's how you would actually implement the example above in JavaScript, using Automagic Variable:
 ```js
+//Setup Automagic Variable by creating a new AVMap instance.
+//Retrieve the AVMap (avm) and its configuration property (config).
 let [ avm, config ] = new AVMap();
+
 //Setup avm.x.
 config.x.val(100);
 //Setup avm.halfX.
