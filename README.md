@@ -81,20 +81,39 @@ let avm = new AVMap();
 Then, use the `config` property (by default) to access the `AVMap`'s config. This will allow you to setup one of several
 AV types, by accessing the property names from the `config`:
 ```js
+//Value types:
+//Create a constant AV, which basically has no automagic about it.
 avm.config.a.const(100);
+//Create an AV which can be manually set, but which does not itself automagically update.
 avm.config.b.val(100);
-avm.config.c.auto(function(self/*, newValue*/) {
-    //self.value = ...;
-});
-avm.config.d.autoVal(function(self) {
-    //self.value = ...;
-});
-avm.config.e.autoOnly(function(self) {
-    //self.value = ...;
-});
 
 //Actual usage, once setup (no .config).
 avm.b = 200;
+//BAD(!): avm.a = 200; //Throws an error!
+
+//Automagic types:
+//Create an AV which automagically recomputes its value inside the provided function.
+avm.config.c.auto(function(self/*, newValue*/) {
+    self.value = avm.b * 2;
+});
+//Same as above, but if manually assigned to, the provided function will not be used; instead, the AV's value will be set directly to whatever is assigned.
+avm.config.d.autoVal(function(self) {
+    self.value = avm.b * 2;
+});
+//Same as above, but it cannot be manually assigned to. It only gets its value from the provided function, ignoring any manual assignments.
+avm.config.e.autoOnly(function(self) {
+    self.value = avm.b * 2;
+});
+
+//Can manually assign a value, but it's currently being ignored.
+avm.c = 300; //avm.c doesn't change.
+//Can manually assign a value, and since this is an autoVal type, its value will change.
+avm.d = 300; //avm.d == 300
+//Can't manually assign a value, since this is an autoOnly type; that is disallowed.
+//BAD(!): avm.e = 300; //Throws an error!
+
+//Here, it recomputes avm.c based on its provided function, which yields avm.b * 2 == 100.
+console.log(avm.c); //100
 ```
 
 Before getting into the types, it's important to understand the distinction between the **`AVMap`** itself and its
