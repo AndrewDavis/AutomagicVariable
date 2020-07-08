@@ -1,5 +1,38 @@
 # AutomagicVariable (v. 3.0)
 
+## Table of Contents
+
+- [AutomagicVariable (v. 3.0)](#automagicvariable-v-30)
+  - [Table of Contents](#table-of-contents)
+  - [Intro](#intro)
+  - [Theory](#theory)
+  - [Quick Example](#quick-example)
+  - [How to Use](#how-to-use)
+    - [The Obvious](#the-obvious)
+    - [Setup](#setup)
+    - [`AVMap` vs. `AVMap._config`](#avmap-vs-avmapconfig)
+    - [The AV Types](#the-av-types)
+    - [Automagic Subscriptions](#automagic-subscriptions)
+    - [Conditions + Etc.](#conditions--etc)
+    - [Objects + Etc.](#objects--etc)
+      - [Q: Why not consider the object/collection to be touched whenever it's accessed instead?<br/>OR:<br/>Q: Why not use some kind of a notifying object wrapper/`Proxy` instead?](#q-why-not-consider-the-objectcollection-to-be-touched-whenever-its-accessed-insteadbrorbrq-why-not-use-some-kind-of-a-notifying-object-wrapperproxy-instead)
+    - [What about deletions and AV `onRecompute()` `function` modifications?](#what-about-deletions-and-av-onrecompute-function-modifications)
+    - [Extra Documentation](#extra-documentation)
+      - [AVMap](#avmap)
+      - [Config](#config)
+  - [How performant is AV?](#how-performant-is-av)
+  - [What else is good to know?](#what-else-is-good-to-know)
+    - [Don't use internals!](#dont-use-internals)
+    - [Multiple and Nested `AVMap`s](#multiple-and-nested-avmaps)
+    - [Garbage Collection/Memory Leaks](#garbage-collectionmemory-leaks)
+    - [Ensuring Values are Always Valid](#ensuring-values-are-always-valid)
+    - [Variable References](#variable-references)
+    - [Recursion](#recursion)
+    - [Optimization vs. Debugging](#optimization-vs-debugging)
+    - [Freezing/Pausing Concepts: Not Implemented](#freezingpausing-concepts-not-implemented)
+
+---
+
 ## Intro
 
 Automagic Variable ("**AV**") is a JavaScript library which solves the problem of keeping variables which subscribe
@@ -373,7 +406,7 @@ worthwhile.
 
 ---
 
-## What about deletions and AV `onRecompute()` `function` modifications?
+### What about deletions and AV `onRecompute()` `function` modifications?
 
 When you use `delete`, make sure to use it on the **AV** itself and **not** on the `AVMap`:
 ```js
@@ -425,31 +458,13 @@ their code/usage.)
 
 ---
 
-## How performant is AV?
+### Extra Documentation
 
-For regular usage, it performs ~10-20X slower than a (highly optimized) JS object for get/set operations, and ~25-200X
-slower (not a typo, it really varies) for everything else (e.g. setup, deletion, etc.). Several notes about this though:
-- This is with perhaps the best equivalent code that can be utilized to compare the two; it might actually be more
-performant than that in actuality and under regular coding circumstances.
-- AV is still very fast, and the performance cost is likely not due to anything that AV can do faster; it's just that JS
-  objects are extremely optimized. Some ~4.5-5k AV `get()` and ~1.8-2k AV `set()` operations only take 1 ms to complete
-  though, for instance.
-- AV was not designed to be extremely fast with the *creation* of `AVMap`s or Automagic Variables, but rather most
-  optimized for the *utilization* (get/set) of said variables after-the-fact.
-
-If you are using AV in performance-critical code, you can always (and most probably should) create temporary variables
-to store the latest value and refrain from interacting with AV until the performance-critical code is complete. See the
-`Set` example from earlier ("Objects + Etc.") for an example.
-
----
-
-## Extra Documentation
-
-### AVMap
+#### AVMap
 
 To detect if an object is an AVMap, check if `typeof(avm._avMap) !== 'undefined'`.
 
-### Config
+#### Config
 
 You can see all of the `_config` `function`s and properties (with comments) by examing the `_AVConfig` class's `_setup`
 `function`. They are:
@@ -479,7 +494,25 @@ You can see all of the `_config` `function`s and properties (with comments) by e
 
 ---
 
-## What else is good to know besides the above?
+## How performant is AV?
+
+For regular usage, it performs ~10-20X slower than a (highly optimized) JS object for get/set operations, and ~25-200X
+slower (not a typo, it really varies) for everything else (e.g. setup, deletion, etc.). Several notes about this though:
+- This is with perhaps the best equivalent code that can be utilized to compare the two; it might actually be more
+performant than that in actuality and under regular coding circumstances.
+- AV is still very fast, and the performance cost is likely not due to anything that AV can do faster; it's just that JS
+  objects are extremely optimized. Some ~4.5-5k AV `get()` and ~1.8-2k AV `set()` operations only take 1 ms to complete
+  though, for instance.
+- AV was not designed to be extremely fast with the *creation* of `AVMap`s or Automagic Variables, but rather most
+  optimized for the *utilization* (get/set) of said variables after-the-fact.
+
+If you are using AV in performance-critical code, you can always (and most probably should) create temporary variables
+to store the latest value and refrain from interacting with AV until the performance-critical code is complete. See the
+`Set` example from earlier ("Objects + Etc.") for an example.
+
+---
+
+## What else is good to know?
 
 ### Don't use internals!
 
@@ -538,7 +571,7 @@ avm.valid = 7; //avm.valid == 7
 avm.valid = null; //avm.valid == 7
 ```
 
-### References
+### Variable References
 
 If you wish to have one AV reference another, the best you're going to be able to do is:
 ```js
