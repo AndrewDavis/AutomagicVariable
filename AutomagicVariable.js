@@ -195,8 +195,8 @@ class _AutomagicVariable {
     constructor(value, name, type) {
         this.value = value;
         //if (!_AVOptimize) {
-            this._name = name;
-            this._type = type;
+            //this._name = name;
+            //this._type = type;
         //}
     }
 
