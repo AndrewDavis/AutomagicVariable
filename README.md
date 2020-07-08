@@ -18,7 +18,9 @@ function updateHalfX() {
     halfX = x * 0.5;
 }
 updateHalfX(); //halfX == 50
+
 //...
+
 x = 200;
 //Don't forget to update!
 updateHalfX(); //halfX == 100
@@ -30,7 +32,9 @@ it automagically do what you told it to do. This is more along the lines of the 
 let x = 100;
 //Pseudo-code (not real JS):
 let halfX: x * 0.5; //halfX == 50
+
 //...
+
 //If declarative, halfX will then auto-update as needed.
 x = 200; //halfX == 100
 ```
@@ -60,6 +64,9 @@ config.halfX.auto(function(self) {
     //Assign avm.halfX's new value here, using self.value.
     self.value = avm.x * 0.5;
 }); //avm.halfX == 50
+
+//...
+
 //Thanks to AV, avm.halfX will then auto-update as needed.
 avm.x = 200;
 //avm.halfX updates itself on the first access afterwards.
