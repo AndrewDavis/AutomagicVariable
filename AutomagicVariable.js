@@ -419,4 +419,4 @@ _AutomagicVariable.EmptySet = new Set();
 _AutomagicVariable._RecomputingAVs = [];
 //_AutomagicVariable._AntiRecursionSet = new Set();
 
-//module.exports = { AVMap };
+//module.exports = AVMap;
